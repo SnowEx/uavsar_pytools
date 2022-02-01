@@ -10,7 +10,7 @@ usage:
 
 import requests
 import os
-from os.path import join, isdir, isfile, basename
+from os.path import join, isdir, isfile, basename, dirname
 from tqdm import tqdm
 import logging
 
@@ -39,7 +39,7 @@ def stream_download(url, output_f):
         log.warning(f'HTTP CODE {r.status_code}. Skipping download!')
 
 
-def download_InSAR(url, output_dir):
+def download_InSAR(url, output_dir, ann = False):
     """
     Downloads uavsar InSAR files from a url.
     Args:
@@ -68,12 +68,33 @@ def download_InSAR(url, output_dir):
     else:
         log.info(f'{local} already exists, skipping download!')
 
-    if url.split('.')[-1] != 'zip':
-        # Download the ann file for non-zip.
-        ext = url.split('.')[-2]
-        ann_url = url.replace(f'{ext}.grd', 'ann')
-        ann_local = local.replace(f'{ext}.grd', 'ann')
+    if ann:
+        if url.split('.')[-1] == 'zip':
+            log.info('Zip dowloads already contains ann file, skipping download!')
+        else:
+            parent = dirname(url)
+            #log.debug(parent)
+            parent_files = requests.get(parent).json()['response']
+            log.debug(parent_files)
+            ann_info = [i for i in parent_files if '.ann' in i['name']][0]
+            # assert len(ann_info) == 1, 'More than one ann file detected'
+            ann_url = ann_info['url']
+            ann_local = join(output_dir, ann_info['name'])
 
+        # if len(basename(url).split('.')) == 2:
+        #     # Download the ann file.
+        #     ext = url.split('.')[-1]
+        #     ann_url = url.replace(f'{ext}', 'ann')
+        #     ann_local = local.replace(f'{ext}', 'ann')
+
+
+        # elif len(basename(url).split('.')) == 3:
+        #     # Download the ann file.
+        #     ext = url.split('.')[-2]
+        #     grd_slc = url.split('.')[-1]
+        #     ann_url = url.replace(f'{ext}.{grd_slc}', 'ann')
+        #     ann_local = local.replace(f'{ext}.{grd_slc}', 'ann')
+        log.debug(f'Annotation local: {ann_local} and {ann_url}')
         if not isfile(ann_local):
             stream_download(ann_url, ann_local)
         else:
@@ -83,6 +104,9 @@ def download_InSAR(url, output_dir):
 def main():
     url = 'https://unzip.asf.alaska.edu/INTERFEROMETRY_GRD/UA/grmesa_27416_21011-010_21016-002_0021d_s01_L090_01_int_grd.zip/grmesa_27416_21011-010_21016-002_0021d_s01_L090HH_01.cor.grd'
     #url = 'https://datapool.asf.alaska.edu/INTERFEROMETRY_GRD/UA/lowman_05208_21019-019_21021-007_0006d_s01_L090_01_int_grd.zip'
-    download_InSAR(url, '../../data/')
+    #url = 'https://datapool.asf.alaska.edu/INC/UA/Rosamd_35012_21067_013_211124_L090_CX_01.inc'
+    ann_url = 'https://unzip.asf.alaska.edu/COMPLEX/UA/Rosamd_35012_21067_013_211124_L090_CX_01_mlc.zip/Rosamd_35012_21067_013_211124_L090_CX_01.ann'
+    #url = 'https://unzip.asf.alaska.edu/COMPLEX/UA/Rosamd_35012_21067_013_211124_L090_CX_01_mlc.zip/Rosamd_35012_21067_013_211124_L090VVVV_CX_01.mlc'
+    download_InSAR(url, '../../data/', ann = True)
 
 main()
