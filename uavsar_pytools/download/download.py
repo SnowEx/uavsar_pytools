@@ -11,11 +11,12 @@ usage:
 import requests
 import os
 from os.path import join, isdir, isfile, basename
-import progressbar
 from tqdm import tqdm
 import logging
 
 log = logging.getLogger(__name__)
+logging.basicConfig()
+log.setLevel(logging.DEBUG)
 
 def stream_download(url, output_f):
     """
@@ -23,21 +24,23 @@ def stream_download(url, output_f):
         url: url to download
         output_f: path to save the data to
     """
-    print(f"\n\nDownloading {url}\nSaving to {output_f}")
+
     r = requests.get(url, stream=True)
-
     if r.status_code == 200:
-        #bar = progressbar.ProgressBar(max_value=progressbar.UnknownLength)
+        # Progress bar - https://towardsdatascience.com/how-to-download-files-using-python-part-2-19b95be4cdb5
+        total_size= int(r.headers.get('content-length', 0))
+        initial_pos = 0
         with open(output_f, 'wb') as f:
-            for i, chunk in tqdm(enumerate(r), description = f'Downloading {basename(url)}'):
-                f.write(chunk)
-                #bar.update(i)
+            with tqdm(total=total_size, unit='B', unit_scale=True , desc=f'Downloading {basename(url)}') as pbar:
+                for ch in r.iter_content(chunk_size=1024):
+                    if ch:
+                        f.write(ch)
+                        pbar.update(len(ch))
     else:
-        print(f"HTTP CODE {r.status_code}. Skipping download!")
+        log.warning(f'HTTP CODE {r.status_code}. Skipping download!')
 
 
-def download_InSAR(url, output_dir, polarizations=['HH', 'HV', 'VH', 'VV'],
-                    file_types=['amp1', 'amp2', 'cor', 'int']):
+def download_InSAR(url, output_dir):
     """
     Downloads uavsar InSAR files from a url.
     Args:
@@ -48,14 +51,14 @@ def download_InSAR(url, output_dir, polarizations=['HH', 'HV', 'VH', 'VV'],
     Raises:
         ValueError: If the base flight name is missing the polarization HH
     """
-    log.info('Starting download of {url}...')
 
+    log.info(f'Starting download of {url}...')
     local = join(output_dir, basename(url))
-    # Checks for existence of url
-    try:
-        r = requests.get(url)
-    except requests.HTTPError as e:
-        log.warning(f'{url} returned {e}')
+    # # Checks for existence of url
+    # try:
+    #     r = requests.get(url)
+    # except requests.HTTPError as e:
+    #     log.warning(f'{url} returned {e}')
 
     # Make the output dir if it doesn't exist
     if not isdir(output_dir):
@@ -64,21 +67,23 @@ def download_InSAR(url, output_dir, polarizations=['HH', 'HV', 'VH', 'VV'],
     if not isfile(local):
         stream_download(url, local)
     else:
-        log.info(f"{local} already exists, skipping download!")
+        log.info(f'{local} already exists, skipping download!')
 
-    # Download the ann file always.
-    ext = url.split('.')[-2]
-    ann_url = url.replace(f"{ext}.grd", "ann")
-    ann_local = local.replace(f"{ext}.grd", "ann")
+    if url.split('.')[-1] != 'zip':
+        # Download the ann file for non-zip.
+        ext = url.split('.')[-2]
+        ann_url = url.replace(f'{ext}.grd', 'ann')
+        ann_local = local.replace(f'{ext}.grd', 'ann')
 
-    if not isfile(ann_local):
-        stream_download(ann_url, ann_local)
-    else:
-        log.info(f"{ann_local} already exists, skipping download!")
+        if not isfile(ann_local):
+            stream_download(ann_url, ann_local)
+        else:
+            log.info(f'{ann_local} already exists, skipping download!')
 
 
 def main():
     url = 'https://unzip.asf.alaska.edu/INTERFEROMETRY_GRD/UA/grmesa_27416_21011-010_21016-002_0021d_s01_L090_01_int_grd.zip/grmesa_27416_21011-010_21016-002_0021d_s01_L090HH_01.cor.grd'
+    url = 'https://datapool.asf.alaska.edu/INTERFEROMETRY_GRD/UA/lowman_05208_21019-019_21021-007_0006d_s01_L090_01_int_grd.zip'
     download_InSAR(url, '../../data/')
 
 main()
