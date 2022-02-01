@@ -29,7 +29,6 @@ def stream_download(url, output_f):
     if r.status_code == 200:
         # Progress bar - https://towardsdatascience.com/how-to-download-files-using-python-part-2-19b95be4cdb5
         total_size= int(r.headers.get('content-length', 0))
-        initial_pos = 0
         with open(output_f, 'wb') as f:
             with tqdm(total=total_size, unit='B', unit_scale=True , desc=f'Downloading {basename(url)}') as pbar:
                 for ch in r.iter_content(chunk_size=1024):
@@ -83,7 +82,7 @@ def download_InSAR(url, output_dir):
 
 def main():
     url = 'https://unzip.asf.alaska.edu/INTERFEROMETRY_GRD/UA/grmesa_27416_21011-010_21016-002_0021d_s01_L090_01_int_grd.zip/grmesa_27416_21011-010_21016-002_0021d_s01_L090HH_01.cor.grd'
-    url = 'https://datapool.asf.alaska.edu/INTERFEROMETRY_GRD/UA/lowman_05208_21019-019_21021-007_0006d_s01_L090_01_int_grd.zip'
+    #url = 'https://datapool.asf.alaska.edu/INTERFEROMETRY_GRD/UA/lowman_05208_21019-019_21021-007_0006d_s01_L090_01_int_grd.zip'
     download_InSAR(url, '../../data/')
 
 main()
