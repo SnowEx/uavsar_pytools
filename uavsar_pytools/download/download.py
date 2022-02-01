@@ -1,6 +1,6 @@
 """
 Originally written by HP Marshall in matlab. Transcribed by Micah J. into python.
-Script uses the urls, polarizations and file types to download uavsar data. It will not overwrite files
+Script uses the urls to download uavsar data. It will not overwrite files
 so if you want to re-download fresh manually remove the output_dir.
 Warning: Canceling the script mid run will produce a file partially written. Rerunning the script will think the
 file is already downloaded and skip it. You will have to remove that file if you want to re-download it.
