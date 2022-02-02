@@ -1,1 +1,4 @@
 /data
+*.tif
+*.grd
+/test/data/imgs/*
