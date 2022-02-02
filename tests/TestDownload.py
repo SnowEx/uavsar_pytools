@@ -9,9 +9,14 @@ import pandas as pd
 from os.path import join, basename, isfile
 
 class TestDownload():
+    # def test_one():
+    #     urls = pd.read_csv('./data/urls')
+    #     print(urls)
+    #     for url in urls:
+    #         download_image(url, out_dir)
+    #         assert(isfile(join('./data/imgs', basename(url))))
     def test_one():
-        urls = pd.read_csv('./data/urls')
-        print(urls)
-        for url in urls:
-            download_image(url, out_dir)
-            assert(isfile(join('./data/imgs', basename(url))))
+        out_dir = './data/urls'
+        urls = pd.read_csv(out_dir)
+        download_image(urls[0])
+        assert isfile(join(out_dir, basename(url)))
