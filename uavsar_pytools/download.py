@@ -39,7 +39,7 @@ def stream_download(url, output_f):
         log.warning(f'HTTP CODE {r.status_code}. Skipping download!')
 
 
-def download_InSAR(url, output_dir, ann = False):
+def download_image(url, output_dir, ann = False):
     """
     Downloads uavsar InSAR files from a url.
     Args:

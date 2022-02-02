@@ -8,7 +8,7 @@ from uavsar_pytools.download import download_image
 import pandas as pd
 from os.path import join, basename, isfile
 
-class TestDownloads():
+class TestDownload():
     def test_one():
         urls = pd.read_csv('./data/urls')
         print(urls)
