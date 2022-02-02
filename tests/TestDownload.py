@@ -18,5 +18,5 @@ class TestDownload():
     def test_one():
         out_dir = './data/urls'
         urls = pd.read_csv(out_dir)
-        download_image(urls[0])
+        download_image(urls[0], out_dir)
         assert isfile(join(out_dir, basename(url)))
