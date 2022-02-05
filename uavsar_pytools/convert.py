@@ -7,8 +7,12 @@ import requests
 import os
 from os.path import isdir, exists, basename
 from tqdm import tqdm
+import numpy as np
 import pandas as pd
 import pytz
+import rasterio
+from rasterio.transform import Affine
+from rasterio.crs import CRS
 import logging
 
 log = logging.getLogger(__name__)
@@ -140,14 +144,33 @@ def convert_image(in_fp, out_fp, ann_fp):
     if isdir(in_fp):
         raise Exception('Must provide file path to output file path.')
     extens = basename(in_fp).split('.')[1:]
-        if len(extens) == 1:
-            type = extens[0]
-        elif len(extens) == 2:
-            #sub_type = extens[0]
-            type = extens[1]
-        else:
-            raise Exception('Can only handle one or two extensions on input file')
 
+    if len(extens) == 1:
+        type = extens[0]
+        subtype = None
+    elif len(extens) == 2:
+        subtype = extens[0]
+        type = extens[1]
+    else:
+        raise Exception('Can only handle one or two extensions on input file')
+
+    # Check for compatible extensions
+    if type == 'zip':
+        raise Exception('Can not directly convert zipped directories.')
+    if type == 'dat' or type == 'kmz' or type == 'kml' or type == '.png':
+        raise Exception(f'Can not handle {type} products')
+    if type == 'ann':
+        raise Exception(f'Can not convert annotation files.')
+
+    # Check for slant range files and ancillary files
+    slant = None
+    anc = None
+    if type == 'slc' or type == 'mlc':
+        slant = True
+    if type == 'slope' or type == 'hgt' or type == 'inc':
+        anc = True
+
+    # Check if file already exists and for overwriting
     ans = 'N'
     if exists(out_fp):
             ans = input(f'\nWARNING! You are about overwrite {in_fp}!.  '
@@ -157,8 +180,95 @@ def convert_image(in_fp, out_fp, ann_fp):
 
     if ans == 'y' or exists(out_fp) == False:
 
+        # Read in annotation file
         desc = read_annotation(ann_fp)
         #pd.DataFrame.from_dict(desc).to_csv('../data/test.csv')
+        mode = desc['acquisition mode']['value']
+        log.info(f'Working with {mode}')
+        # Grab the metadata for building our georeference
+        if not anc:
+            if subtype != 'int' or subtype != None:
+                type = f'{type}_pwr'
+            else:
+                type = f'{type}_mag'
+
+        nrow = desc[f'{type}.set_rows']['value']
+        ncol = desc[f'{type}.set_cols']['value']
+        log.debug(f'rows: {nrow} x cols: {ncol} pixels')
+        # Delta latitude and longitude
+        dlat = desc[f'{type}.row_mult']['value']
+        dlon = desc[f'{type}.col_mult']['value']
+        if slant:
+            log.debug(f'row delta: {dlat}, col delta: {dlon} m/pixel')
+        else:
+            log.debug(f'row delta: {dlat}, col delta: {dlon} deg/pixel')
+        if slant:
+            peg_lat = desc['Set_plat']['value'] # degrees
+            peg_long = desc['Set_plon']['value'] # degrees
+            peg_head = desc['Set_phdg']['value'] # degrees
+            # Upper left corner coordinates
+            lat1 = desc[f'{type}.row_addr']['value'] # meters of azimuth offset from peg of upper left pixel
+            lon1 = desc[f'{type}.col_addr']['value'] # meters of range offset from peg of upper left pixel
+
+            ################HOW TO SOLVE FOR LAT LONG? CAN WE USE GRD LAT LONGS OR DOES THE MULTILOOKING MAKE THAT WRONG?
+
+            log.debug(f'Approximate radar latitude: {lat1}, longitude: {lon1} degrees')
+        else:
+            # Upper left corner coordinates
+            lat1 = desc[f'{type}.row_addr']['value']
+            lon1 = desc[f'{type}.col_addr']['value']
+            log.debug(f'Ref Latitude: {lat1}, Longitude: {lon1} degrees')
+        bytes = desc[f'{type}.val_size']['value']
+        endian = desc['val_endi']['value']
+        log.debug(f'Bytes = {bytes}, Endian = {endian}')
+
+        # Set up datatypes
+        com_des = desc[f'{type}.val_frmt']['value']
+        com = False
+        if 'COMPLEX' in com_des:
+            com = True
+        log.debug(f'Complex descriptor {com_des}')
+        if subtype == 'int' or type == 'int':
+            dtype = np.dtype([('real', '<f4'), ('imaginary', '<f4')])
+        else:
+            if com:
+                dtype = np.dtype([('real', '<f4'), ('imaginary', '<f4')])
+            else:
+                dtype = np.dtype([('real', '<f{}'.format(bytes))])
+        log.debug(f'Data type = {dtype}')
+        # Read in binary data
+        z = np.fromfile(in_fp, dtype = dtype)
+
+        # Reshape it to match what the text file says the image is
+        z = z.reshape(nrow, ncol)
+
+        # Build the transform and CRS
+        crs = CRS.from_user_input("EPSG:4326")
+
+        log.debug(f'{lon1}, {lat1}, {dlon}, {dlat}')
+        # Lat1/lon1 are already the center so for geotiff were good to go.
+        t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
+
+        for i, comp in enumerate(['real', 'imaginary']):
+            if comp in z.dtype.names:
+                d = z[comp]
+                log.debug('Writing to {}...'.format(out_fp))
+                dataset = rasterio.open(
+                    out_fp,
+                    'w+',
+                    driver='GTiff',
+                    height=d.shape[0],
+                    width=d.shape[1],
+                    count=1,
+                    dtype=d.dtype,
+                    crs=crs,
+                    transform=t,
+                )
+                # Write out the data
+                dataset.write(d, 1)
+
+                dataset.close()
+
 
 
 
