@@ -1,11 +1,9 @@
 """
 Originally written by HP Marshall in matlab. Transcribed by Micah J. into python. Amended for uavsar_pytools by Zach Keskinen.
-Script uses the urls to download uavsar data. It will not overwrite files
+Functions uses the urls to download uavsar data. It will not overwrite files
 so if you want to re-download fresh manually remove the output_dir.
 Warning: Canceling the script mid run will produce a file partially written. Rerunning the script will think the
 file is already downloaded and skip it. You will have to remove that file if you want to re-download it.
-usage:
-    python3 download_uavsar.py
 """
 
 import requests
@@ -46,7 +44,7 @@ def download_image(url, output_dir, ann = False):
         url (string): A url containing uavsar flight data. Can be from JPL or ASF
         output_dir (string): Directory to save the data in
     Returns:
-        None
+        out_fp (string): File path to downloaded image.
     Raises:
        None
     """
@@ -108,3 +106,4 @@ def download_image(url, output_dir, ann = False):
                     stream_download(ann_url, ann_local)
                 else:
                     log.info(f'{ann_local} already exists, skipping download!')
+    return local
