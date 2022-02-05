@@ -3,9 +3,9 @@ Originally written by Micah J. into python. Amended for uavsar_pytools by Zach K
 Functions convert polsar, insar, and other associated UAVSAR files from binary format to geoTIFFS in WGS84.
 """
 
-import requests
 import os
-from os.path import isdir, exists, basename
+from os.path import isdir, exists, basename, dirname
+from glob import glob
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
@@ -129,7 +129,7 @@ def read_annotation(ann_file):
 
     return data
 
-def convert_image(in_fp, out_fp, ann_fp):
+def convert_image(in_fp, out_fp, ann_fp = None):
     """
     Converts a single binary image either polsar or insar to geotiff.
     See: https://uavsar.jpl.nasa.gov/science/documents/polsar-format.html for polsar
@@ -154,9 +154,23 @@ def convert_image(in_fp, out_fp, ann_fp):
     else:
         raise Exception('Can only handle one or two extensions on input file')
 
+    if not ann_fp:
+        if subtype:
+            ann_fp = in_fp.replace(f'.{subtype}, '').replace(type, 'ann')
+        else:
+            ann_fp = in_fp.replace(type, 'ann')
+        if not exists(ann_fp):
+            ann_search = glob(os.path.join(os.path.dirname(fp), '*.ann'))
+            if len(ann_search) == 1:
+                ann_fp = ann_search[0]
+            else:
+                raise Exception('No ann file found in directory. Please specify ann filepath.')
+        else:
+            log.info(f'No annotation file path specificed. Using f{ann_fp}.')
+
     # Check for compatible extensions
     if type == 'zip':
-        raise Exception('Can not directly convert zipped directories.')
+        raise Exception('Can not convert zipped directories. Unzip first.')
     if type == 'dat' or type == 'kmz' or type == 'kml' or type == '.png':
         raise Exception(f'Can not handle {type} products')
     if type == 'ann':
