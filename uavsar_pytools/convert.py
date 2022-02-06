@@ -15,6 +15,8 @@ from rasterio.transform import Affine
 from rasterio.crs import CRS
 import logging
 
+from download import download_image
+
 log = logging.getLogger(__name__)
 logging.basicConfig()
 log.setLevel(logging.DEBUG)
@@ -142,9 +144,12 @@ def convert_image(in_fp, out_fp, ann_fp = None):
     """
     # Determine type of image
     if isdir(in_fp):
-        raise Exception('Must provide file path to output file path.')
-    extens = basename(in_fp).split('.')[1:]
+        raise Exception('Provide filepath not the directory.')
 
+    if not exists(in_fp):
+        raise Exception(f'Input file path: {in_fp} does not exist.')
+
+    extens = basename(in_fp).split('.')[1:]
     if len(extens) == 1:
         type = extens[0]
         subtype = None
@@ -156,11 +161,11 @@ def convert_image(in_fp, out_fp, ann_fp = None):
 
     if not ann_fp:
         if subtype:
-            ann_fp = in_fp.replace(f'.{subtype}, '').replace(type, 'ann')
+            ann_fp = in_fp.replace(f'.{subtype}', '').replace(type, 'ann')
         else:
             ann_fp = in_fp.replace(type, 'ann')
         if not exists(ann_fp):
-            ann_search = glob(os.path.join(os.path.dirname(fp), '*.ann'))
+            ann_search = glob(os.path.join(os.path.dirname(in_fp), '*.ann'))
             if len(ann_search) == 1:
                 ann_fp = ann_search[0]
             else:
@@ -283,12 +288,14 @@ def convert_image(in_fp, out_fp, ann_fp = None):
 
                 dataset.close()
 
+if __name__ == '__main__':
+    urls = pd.read_csv('../tests/data/urls')
+    for url in tqdm(urls.iloc[:,0], unit = 'image'):
+        try:
+            down_fp = download_image(url, output_dir = '../data/imgs', ann = True)
+            convert_image(down_fp, out_fp = down_fp + '.tiff')
+        except Exception as e:
+            print(url)
+            print(e)
 
-
-
-
-
-
-
-
-convert_image(in_fp = '../data/imgs/Rosamd_35012_21067_013_211124_L090VVVV_CX_01.grd', out_fp= '../data/imgs/test.tiff', ann_fp= '../data/imgs/Rosamd_35012_21067_013_211124_L090_CX_01.ann')
+# convert_image(in_fp = '../data/imgs/Rosamd_35012_21067_013_211124_L090VVVV_CX_01.grd', out_fp= '../data/imgs/test.tiff', ann_fp= '../data/imgs/Rosamd_35012_21067_013_211124_L090_CX_01.ann')
