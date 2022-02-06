@@ -292,11 +292,12 @@ def convert_image(in_fp, out_fp, ann_fp = None):
 if __name__ == '__main__':
     urls = pd.read_csv('../tests/data/urls')
     for url in tqdm(urls.iloc[:,0], unit = 'image'):
-        try:
-            down_fp = download_image(url, output_dir = '../data/imgs', ann = True)
-            convert_image(down_fp, out_fp = down_fp + '.tiff')
-        except Exception as e:
-            print(url)
-            print(e)
+        if 'asf.alaska.edu' not in url:
+            try:
+                down_fp = download_image(url, output_dir = '../data/imgs', ann = True)
+                convert_image(down_fp, out_fp = down_fp + '.tiff')
+            except Exception as e:
+                print(url)
+                print(e)
 
 # convert_image(in_fp = '../data/imgs/Rosamd_35012_21067_013_211124_L090VVVV_CX_01.grd', out_fp= '../data/imgs/test.tiff', ann_fp= '../data/imgs/Rosamd_35012_21067_013_211124_L090_CX_01.ann')

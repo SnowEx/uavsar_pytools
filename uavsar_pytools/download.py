@@ -101,7 +101,7 @@ def download_image(url, output_dir, ann = False):
 
             if ann_url:
                 ann_local = join(output_dir, basename(ann_url))
-                log.debug(f'Annotation local: {ann_local} and {ann_url}')
+                log.debug(f'Annotation local: {ann_local} and url {ann_url}')
                 if not isfile(ann_local):
                     stream_download(ann_url, ann_local)
                 else:
