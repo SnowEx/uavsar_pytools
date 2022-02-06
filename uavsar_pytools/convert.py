@@ -165,7 +165,8 @@ def convert_image(in_fp, out_fp, ann_fp = None):
         else:
             ann_fp = in_fp.replace(type, 'ann')
         if not exists(ann_fp):
-            ann_search = glob(os.path.join(os.path.dirname(in_fp), '*.ann'))
+            search_base = ''.join(basename(in_fp).split('.')[0].split('_')[:4])
+            ann_search = glob(os.path.join(os.path.dirname(in_fp), '{search_base}*.ann'))
             if len(ann_search) == 1:
                 ann_fp = ann_search[0]
             else:
