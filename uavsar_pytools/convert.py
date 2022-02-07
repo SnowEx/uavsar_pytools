@@ -131,7 +131,9 @@ def read_annotation(ann_file):
 
     return data
 
-def convert_image(in_fp, out_fp, ann_fp = None):
+
+
+def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
     """
     Converts a single binary image either polsar or insar to geotiff.
     See: https://uavsar.jpl.nasa.gov/science/documents/polsar-format.html for polsar
@@ -161,12 +163,14 @@ def convert_image(in_fp, out_fp, ann_fp = None):
 
     if not ann_fp:
         if subtype:
-            ann_fp = in_fp.replace(f'.{subtype}', '').replace(type, 'ann')
+            ann_fp = in_fp.replace(f'.{subtype}', '').replace(f'.{type}', '.ann')
         else:
-            ann_fp = in_fp.replace(type, 'ann')
+            ann_fp = in_fp.replace(f'.{type}', '.ann')
         if not exists(ann_fp):
-            search_base = ''.join(basename(in_fp).split('.')[0].split('_')[:4])
-            ann_search = glob(os.path.join(os.path.dirname(in_fp), '{search_base}*.ann'))
+            search_base = '_'.join(basename(in_fp).split('.')[0].split('_')[:4])
+            search_full = os.path.join(os.path.dirname(in_fp), f'{search_base}*.ann')
+            log.debug(f'Glob search: {search_full}')
+            ann_search = glob(search_full)
             if len(ann_search) == 1:
                 ann_fp = ann_search[0]
             else:
@@ -179,22 +183,26 @@ def convert_image(in_fp, out_fp, ann_fp = None):
         raise Exception('Can not convert zipped directories. Unzip first.')
     if type == 'dat' or type == 'kmz' or type == 'kml' or type == '.png':
         raise Exception(f'Can not handle {type} products')
+    if subtype == 'kmz':
+        raise Exception('Can not handle kmz interferograms.')
     if type == 'ann':
         raise Exception(f'Can not convert annotation files.')
 
     # Check for slant range files and ancillary files
-    slant = None
     anc = None
-    if type == 'slc' or type == 'mlc':
-        slant = True
     if type == 'slope' or type == 'hgt' or type == 'inc':
         anc = True
 
     # Check if file already exists and for overwriting
     ans = 'N'
     if exists(out_fp):
-            ans = input(f'\nWARNING! You are about overwrite {in_fp}!.  '
-                        f'\nPress Y to continue and any other key to abort: ').lower()
+            if overwrite == True:
+                ans = 'y'
+            elif overwrite == False:
+                ans = 'n'
+            else:
+                ans = input(f'\nWARNING! You are about overwrite {out_fp}!.  '
+                            f'\nPress Y to continue and any other key to abort: ').lower()
             if ans == 'y':
                 os.remove(out_fp)
 
@@ -203,14 +211,45 @@ def convert_image(in_fp, out_fp, ann_fp = None):
         # Read in annotation file
         desc = read_annotation(ann_fp)
         #pd.DataFrame.from_dict(desc).to_csv('../data/test.csv')
-        mode = desc['acquisition mode']['value']
+        if 'flight id for pass 2' in desc.keys():
+            mode = 'insar'
+        else:
+            mode = 'polsar'
         log.info(f'Working with {mode}')
+
         # Grab the metadata for building our georeference
-        if not anc:
-            if subtype != 'int' or subtype != None:
-                type = f'{type}_pwr'
-            else:
+        slant = None
+        if not anc and mode == 'polsar':
+            if type == 'slc':
+                type = f'{type}_amp'
+                slant = True
+            elif type == 'mlc':
+                polarization = basename(in_fp).split('_')[5][-4:]
+                log.debug(f'Using Polarization of {polarization}')
+                assert len(polarization) == 4, 'Unable to determine polarization of MLC file.'
+                if polarization == 'HHHH' or polarization == 'HVHV' or polarization == 'VVVV':
+                    type = f'{type}_pwr'
+                else:
+                    type = f'{type}_mag'
+                slant = True
+            elif type == 'grd':
                 type = f'{type}_mag'
+        if not anc and mode == 'insar':
+            if type == 'slc':
+                type = f'{type}_amp'
+            if subtype == None:
+                if type == 'int':
+                    type = 'slt_phs'
+                else:
+                    type = 'slt'
+                slant = True
+            if subtype == 'grd':
+                if type == 'int':
+                    type = 'grd_phs'
+                else:
+                    type = 'grd'
+
+        log.info(f'type = {type}')
 
         nrow = desc[f'{type}.set_rows']['value']
         ncol = desc[f'{type}.set_cols']['value']
@@ -223,15 +262,16 @@ def convert_image(in_fp, out_fp, ann_fp = None):
         else:
             log.debug(f'row delta: {dlat}, col delta: {dlon} deg/pixel')
         if slant:
-            peg_lat = desc['Set_plat']['value'] # degrees
-            peg_long = desc['Set_plon']['value'] # degrees
-            peg_head = desc['Set_phdg']['value'] # degrees
+            peg_lat = desc['set_plat']['value'] # degrees
+            peg_long = desc['set_plon']['value'] # degrees
+            peg_head = desc['set_phdg']['value'] # degrees
             # Upper left corner coordinates
             lat1 = desc[f'{type}.row_addr']['value'] # meters of azimuth offset from peg of upper left pixel
             lon1 = desc[f'{type}.col_addr']['value'] # meters of range offset from peg of upper left pixel
 
             ################HOW TO SOLVE FOR LAT LONG? CAN WE USE GRD LAT LONGS OR DOES THE MULTILOOKING MAKE THAT WRONG?
-
+            lat1 = 'working on it'
+            lon1 = 'working on it'
             log.debug(f'Approximate radar latitude: {lat1}, longitude: {lon1} degrees')
         else:
             # Upper left corner coordinates
@@ -243,6 +283,7 @@ def convert_image(in_fp, out_fp, ann_fp = None):
         log.debug(f'Bytes = {bytes}, Endian = {endian}')
 
         # Set up datatypes
+        log.debug(type)
         com_des = desc[f'{type}.val_frmt']['value']
         com = False
         if 'COMPLEX' in com_des:
@@ -265,14 +306,13 @@ def convert_image(in_fp, out_fp, ann_fp = None):
         # Build the transform and CRS
         crs = CRS.from_user_input("EPSG:4326")
 
-        log.debug(f'{lon1}, {lat1}, {dlon}, {dlat}')
         # Lat1/lon1 are already the center so for geotiff were good to go.
         t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
 
         for i, comp in enumerate(['real', 'imaginary']):
             if comp in z.dtype.names:
                 d = z[comp]
-                log.debug('Writing to {}...'.format(out_fp))
+                log.debug(f'Writing {comp} component to {out_fp}...')
                 dataset = rasterio.open(
                     out_fp,
                     'w+',
@@ -291,13 +331,41 @@ def convert_image(in_fp, out_fp, ann_fp = None):
 
 if __name__ == '__main__':
     urls = pd.read_csv('../tests/data/urls')
-    for url in tqdm(urls.iloc[:,0], unit = 'image'):
-        if 'asf.alaska.edu' not in url:
+    for i, url in enumerate(urls.iloc[:,0]):
+        #if 'asf.alaska.edu' not in url:
+        if i == 28:
             try:
                 down_fp = download_image(url, output_dir = '../data/imgs', ann = True)
-                convert_image(down_fp, out_fp = down_fp + '.tiff')
+                print(f'Results == {down_fp}')
+                convert_image(down_fp, out_fp = down_fp + '.tiff', overwrite = True)
             except Exception as e:
-                print(url)
                 print(e)
 
 # convert_image(in_fp = '../data/imgs/Rosamd_35012_21067_013_211124_L090VVVV_CX_01.grd', out_fp= '../data/imgs/test.tiff', ann_fp= '../data/imgs/Rosamd_35012_21067_013_211124_L090_CX_01.ann')
+#i = 1 - 503 server error. Handled
+#i = 2 - 503 server error. Handled
+#i = 3 - ANN file. Downloaded and asserted appropriately
+#i = 4 - DAT file. Downloaded and asserted appropriately
+#i = 5 - 503 server error. Handled
+#i = 6 - mlc file that need to have lat long calculated
+#i = 7 - mlc file that need to have lat long calculated
+#i = 8 - DAT file. Downloaded and asserted appropriately
+#i = 9 - Downloaded and converted
+#i = 10 - Downloaded and converted
+#i = 11 - Downloaded and converted
+#i = 12 - Downloaded and converted
+#i = 13 - ANN file. Downloaded and asserted appropriately
+#i = 14 - 404 error. Not found on chrome either.
+#i = 15 - SLT range that need to have lat long calculated
+#i = 16 - Downloaded and converted
+#i = 17 - ANN file. Downloaded and asserted appropriately
+#i = 18 - mlc file that need to have lat long calculated
+#i = 19 - Downloaded and converted
+#i = 20 - Downloaded and converted
+#i = 21 - Downloaded and converted
+#i = 22 - SLT range that need to have lat long calculated
+#i = 23 - ANN file. Downloaded and asserted appropriately
+#i = 24 - ZIP file. Downloaded and asserted appropriately
+#i = 25 - SLT range that need to have lat long calculated
+#i = 26 - Downloaded and converted
+#i = 27 - SLT range that need to have lat long calculated

@@ -9,12 +9,12 @@ file is already downloaded and skip it. You will have to remove that file if you
 import requests
 import os
 from os.path import join, isdir, isfile, basename, dirname
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import logging
 
 log = logging.getLogger(__name__)
 logging.basicConfig()
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.WARNING)
 
 def stream_download(url, output_f):
     """
@@ -66,12 +66,10 @@ def download_image(url, output_dir, ann = False):
             log.info('Download already contains ann file, skipping download!')
         else:
             parent = dirname(url)
-            log.debug(parent)
             # ASF formatting - query parent directory
             if parent.split('.')[-1] == 'zip':
                 log.debug(f'ASF url found for {url}')
                 parent_files = requests.get(parent).json()['response']
-                log.debug(f'Results of JSON request: {parent_files}')
                 ann_info = [i for i in parent_files if '.ann' in i['name']][0]
                 # assert len(ann_info) == 1, 'More than one ann file detected'
                 ann_url = ann_info['url']
