@@ -11,9 +11,9 @@ import numpy as np
 import pandas as pd
 import pytz
 import rasterio
-from rasterio.transform import Affine
+from rasterio.transform import Affine, from_origin
 from rasterio.crs import CRS
-from pyproj import Geod
+from pyproj import Geod, Proj
 import logging
 
 from download import download_image
@@ -305,53 +305,51 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
             azi_offset = desc[f'{type}.row_addr']['value'] # meters of cross-track offset from peg of upper left pixel
             range_offset = desc[f'{type}.col_addr']['value'] # meters of along-track offset from peg of upper left pixel
 
-            ################HOW TO SOLVE FOR LAT LONG? CAN WE USE GRD LAT LONGS OR DOES THE MULTILOOKING MAKE THAT WRONG?
+################HOW TO SOLVE FOR LAT LONG? CAN WE USE GRD LAT LONGS OR DOES THE MULTILOOKING MAKE THAT WRONG?##############################################################
             print(f'peg: {peg_lat}, {peg_lon}, {peg_head}')
             print(f'cross-track offset {range_offset} m, along-track {azi_offset} m')
             g = Geod(a = float(desc['ellipsoid semi-major axis']['value']), es = float(desc['ellipsoid eccentricity squared']['value']))
-            #g= Geod(ellps='clrk66')
-            print(f'azimuth head: {peg_head}, offset azimuth: {azi_offset}')
-            peg_head, _  = heading_angle_correction(peg_head, 1)
-            azi_head, azi_offset = heading_angle_correction(peg_head, azi_offset)
-            endlon, endlat, _ = g.fwd(peg_lon, peg_lat, peg_head, azi_offset)
-            print(f'azimuth head: {azi_head}, offset azimuth: {azi_offset}')
-            print(f'{endlat}, {endlon}')
 
+            rot = peg_head
+            peg_head, _  = heading_angle_correction(peg_head, 1)
+            azi_offset = abs(azi_offset)
+            azilon, azilat, _ = g.fwd(peg_lon, peg_lat, peg_head, azi_offset)
+            print(f'Azimuth shifted {azilat}, {azilon}')
             if look_dir == 'Left':
                 range_head = peg_head - 90 # left facing
             elif look_dir == 'Right':
                 range_head = peg_head + 90 # left facing
 
-            range_head, range_offset = heading_angle_correction(range_head, range_offset)
-            print(f'range head {range_head}, offset range {range_offset}')
-            lon1, lat1, _ = g.fwd(peg_lon, peg_lat, range_head, range_offset)
-            print(f'{endlat}, {endlon}')
-            # lat1 = 'working on it'
-            # lon1 = 'working on it'
+            range_head, _ = heading_angle_correction(range_head, 1)
+            range_head = abs(range_head)
+
+            lon1, lat1, _ = g.fwd(azilon, azilat, range_head, range_offset)
+            print(f'{lat1}, {lon1}')
             log.debug(f'Approximate radar latitude: {lat1}, longitude: {lon1} degrees')
 
-
+            P = Proj("epsg:32713")
+            G = Geod(ellps='WGS84')
+            print(lat1)
+            print(lon1)
+            x,y = P(lat1, lon1, inverse=True)
+            print(x)
+            print(y)
             # COMPARISON TO REMOVE
             lat1_grd = desc['grd_mag.row_addr']['value']
             lon1_grd = desc['grd_mag.col_addr']['value']
             log.debug(f'Compared to ground range coords {lat1_grd}, {lon1_grd}')
 
             ##DX DY TESTING
-            dazi_lon, dazi_lat, _ = g.fwd(lon1, lat1, dazi, azi_head)
-            # dlon = abs(dazi_lon - lon1)
-            # dlat = abs(dazi_lat - lat1)
-            # print(f'Intermediate {dlon}, {dlat}')
-            dboth_lon, dboth_lat, _ = g.fwd(dazi_lon, dazi_lat, drange, range_head)
-            dlon = abs(lon1 - dboth_lon)
-            dlat = abs(lat1 - dboth_lat)
-            print(f'Delta in long: {dlon}, delta in lat: {dlat}')
+
+
             grd_dlat, grd_dlon = desc['grd_mag.row_mult']['value'], desc['grd_mag.col_mult']['value']
             print(f'grd spacing: {grd_dlat} x {grd_dlon} deg/pixel')
-
-            raise Exception('Testing')
+            print(peg_head)
+            t = Affine.translation(x, y) * Affine.scale(dazi, drange) * Affine.rotation(rot)
 
 #####################################################################################################################################
         else:
+            # Ground projected images
             # Delta latitude and longitude
             dlat = desc[f'{type}.row_mult']['value']
             dlon = desc[f'{type}.col_mult']['value']
@@ -360,6 +358,9 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
             lat1 = desc[f'{type}.row_addr']['value']
             lon1 = desc[f'{type}.col_addr']['value']
             log.debug(f'Ref Latitude: {lat1}, Longitude: {lon1} degrees')
+
+            # Lat1/lon1 are already the center so for geotiff were good to go.
+            t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
 
         # Get data type specific data
         bytes = desc[f'{type}.val_size']['value']
@@ -389,9 +390,7 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
 
         # Build the transform and CRS
         crs = CRS.from_user_input("EPSG:4326")
-
-        # Lat1/lon1 are already the center so for geotiff were good to go.
-        t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
+        crs = CRS.from_user_input("EPSG:32713")
 
         for comp in ['real', 'imaginary']:
             if comp in z.dtype.names:
@@ -417,7 +416,7 @@ if __name__ == '__main__':
     urls = pd.read_csv('../tests/data/urls')
     for i, url in enumerate(urls.iloc[:,0]):
         #if 'asf.alaska.edu' not in url:
-        if i == 6:
+        if i == 22:
             try:
                 down_fp = download_image(url, output_dir = '../data/imgs', ann = True)
                 print(f'Results == {down_fp}')

@@ -2,3 +2,4 @@
 *.tif
 *.grd
 /test/data/imgs/*
+play.ipynb
