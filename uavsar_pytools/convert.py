@@ -13,6 +13,7 @@ import pytz
 import rasterio
 from rasterio.transform import Affine
 from rasterio.crs import CRS
+from pyproj import Geod
 import logging
 
 from download import download_image
@@ -131,13 +132,42 @@ def read_annotation(ann_file):
 
     return data
 
+def heading_angle_correction(angle, dist):
+    """
+    Function to convert UAVSAR headings in range and azimuth direction to between 0 - 360. Converts
+    heading to opposite direction for negative offsets.
 
+    Args:
+        angle (float) - heading of offset from some lat long
+        dist (float) - distance of offset from some lat long
+
+    Returns:
+        angle (float) - angle converted to between 0 - 360 degrees.
+        dist (float) - distance converted to > 0
+    """
+    if angle < 0:
+        adj_angle = angle + 360
+    elif angle > 360:
+        adj_angle = angle - 360
+    elif angle <=360 or angle >=0:
+        adj_angle = angle
+
+    if dist < 0:
+        if adj_angle < 180:
+            adj_angle = adj_angle + 180
+        else:
+            adj_angle = adj_angle - 180
+        dist = abs(dist)
+
+
+    return adj_angle, dist
 
 def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
     """
     Converts a single binary image either polsar or insar to geotiff.
     See: https://uavsar.jpl.nasa.gov/science/documents/polsar-format.html for polsar
-    and: https://uavsar.jpl.nasa.gov/science/documents/rpi-format.html for insar.
+    and: https://uavsar.jpl.nasa.gov/science/documents/rpi-format.html for insar
+    and: https://uavsar.jpl.nasa.gov/science/documents/stack-format.html for SLC stacks.
 
     Args:
         in_fp (string): path to input binary file
@@ -161,6 +191,7 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
     else:
         raise Exception('Can only handle one or two extensions on input file')
 
+    # Find annotation file in same directory if no user given one
     if not ann_fp:
         if subtype:
             ann_fp = in_fp.replace(f'.{subtype}', '').replace(f'.{type}', '.ann')
@@ -217,67 +248,120 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
             mode = 'polsar'
         log.info(f'Working with {mode}')
 
-        # Grab the metadata for building our georeference
+        # Determine the correct file typing for searching our data dictionary
         slant = None
-        if not anc and mode == 'polsar':
-            if type == 'slc':
-                type = f'{type}_amp'
-                slant = True
-            elif type == 'mlc':
-                polarization = basename(in_fp).split('_')[5][-4:]
-                log.debug(f'Using Polarization of {polarization}')
-                assert len(polarization) == 4, 'Unable to determine polarization of MLC file.'
-                if polarization == 'HHHH' or polarization == 'HVHV' or polarization == 'VVVV':
-                    type = f'{type}_pwr'
-                else:
+        if not anc:
+            if mode == 'polsar':
+                look_dir = desc['look direction']['value']
+                if type == 'slc':
+                    type = f'{type}_amp'
+                    slant = True
+                elif type == 'mlc':
+                    polarization = basename(in_fp).split('_')[5][-4:]
+                    log.debug(f'Using Polarization of {polarization}')
+                    assert len(polarization) == 4, 'Unable to determine polarization of MLC file.'
+                    if polarization == 'HHHH' or polarization == 'HVHV' or polarization == 'VVVV':
+                        type = f'{type}_pwr'
+                    else:
+                        type = f'{type}_mag'
+                    slant = True
+                elif type == 'grd':
                     type = f'{type}_mag'
-                slant = True
-            elif type == 'grd':
-                type = f'{type}_mag'
-        if not anc and mode == 'insar':
-            if type == 'slc':
-                type = f'{type}_amp'
-            if subtype == None:
-                if type == 'int':
-                    type = 'slt_phs'
-                else:
-                    type = 'slt'
-                slant = True
-            if subtype == 'grd':
-                if type == 'int':
-                    type = 'grd_phs'
-                else:
-                    type = 'grd'
+
+            elif mode == 'insar':
+                look_dir = desc['radar look direction']['value']
+                if type == 'slc':
+                    type = f'{type}_amp'
+                if subtype == None:
+                    if type == 'int':
+                        type = 'slt_phs'
+                    else:
+                        type = 'slt'
+                    slant = True
+                if subtype == 'grd':
+                    if type == 'int':
+                        type = 'grd_phs'
+                    else:
+                        type = 'grd'
 
         log.info(f'type = {type}')
 
+        # Pull the appropriate values from our annotation dictionary
         nrow = desc[f'{type}.set_rows']['value']
         ncol = desc[f'{type}.set_cols']['value']
         log.debug(f'rows: {nrow} x cols: {ncol} pixels')
-        # Delta latitude and longitude
-        dlat = desc[f'{type}.row_mult']['value']
-        dlon = desc[f'{type}.col_mult']['value']
+
         if slant:
-            log.debug(f'row delta: {dlat}, col delta: {dlon} m/pixel')
-        else:
-            log.debug(f'row delta: {dlat}, col delta: {dlon} deg/pixel')
-        if slant:
+            # Delta latitude and longitude
+            dazi = desc[f'{type}.row_mult']['value']
+            drange = desc[f'{type}.col_mult']['value']
+            log.debug(f'azimuth delta: {dazi}, range delta: {drange} m/pixel')
+
+            # Calculate upper left corner
             peg_lat = desc['set_plat']['value'] # degrees
-            peg_long = desc['set_plon']['value'] # degrees
+            peg_lon = desc['set_plon']['value'] # degrees
             peg_head = desc['set_phdg']['value'] # degrees
             # Upper left corner coordinates
-            lat1 = desc[f'{type}.row_addr']['value'] # meters of azimuth offset from peg of upper left pixel
-            lon1 = desc[f'{type}.col_addr']['value'] # meters of range offset from peg of upper left pixel
+            azi_offset = desc[f'{type}.row_addr']['value'] # meters of cross-track offset from peg of upper left pixel
+            range_offset = desc[f'{type}.col_addr']['value'] # meters of along-track offset from peg of upper left pixel
 
             ################HOW TO SOLVE FOR LAT LONG? CAN WE USE GRD LAT LONGS OR DOES THE MULTILOOKING MAKE THAT WRONG?
-            lat1 = 'working on it'
-            lon1 = 'working on it'
+            print(f'peg: {peg_lat}, {peg_lon}, {peg_head}')
+            print(f'cross-track offset {range_offset} m, along-track {azi_offset} m')
+            g = Geod(a = float(desc['ellipsoid semi-major axis']['value']), es = float(desc['ellipsoid eccentricity squared']['value']))
+            #g= Geod(ellps='clrk66')
+            print(f'azimuth head: {peg_head}, offset azimuth: {azi_offset}')
+            peg_head, _  = heading_angle_correction(peg_head, 1)
+            azi_head, azi_offset = heading_angle_correction(peg_head, azi_offset)
+            endlon, endlat, _ = g.fwd(peg_lon, peg_lat, peg_head, azi_offset)
+            print(f'azimuth head: {azi_head}, offset azimuth: {azi_offset}')
+            print(f'{endlat}, {endlon}')
+
+            if look_dir == 'Left':
+                range_head = peg_head - 90 # left facing
+            elif look_dir == 'Right':
+                range_head = peg_head + 90 # left facing
+
+            range_head, range_offset = heading_angle_correction(range_head, range_offset)
+            print(f'range head {range_head}, offset range {range_offset}')
+            lon1, lat1, _ = g.fwd(peg_lon, peg_lat, range_head, range_offset)
+            print(f'{endlat}, {endlon}')
+            # lat1 = 'working on it'
+            # lon1 = 'working on it'
             log.debug(f'Approximate radar latitude: {lat1}, longitude: {lon1} degrees')
+
+
+            # COMPARISON TO REMOVE
+            lat1_grd = desc['grd_mag.row_addr']['value']
+            lon1_grd = desc['grd_mag.col_addr']['value']
+            log.debug(f'Compared to ground range coords {lat1_grd}, {lon1_grd}')
+
+            ##DX DY TESTING
+            dazi_lon, dazi_lat, _ = g.fwd(lon1, lat1, dazi, azi_head)
+            # dlon = abs(dazi_lon - lon1)
+            # dlat = abs(dazi_lat - lat1)
+            # print(f'Intermediate {dlon}, {dlat}')
+            dboth_lon, dboth_lat, _ = g.fwd(dazi_lon, dazi_lat, drange, range_head)
+            dlon = abs(lon1 - dboth_lon)
+            dlat = abs(lat1 - dboth_lat)
+            print(f'Delta in long: {dlon}, delta in lat: {dlat}')
+            grd_dlat, grd_dlon = desc['grd_mag.row_mult']['value'], desc['grd_mag.col_mult']['value']
+            print(f'grd spacing: {grd_dlat} x {grd_dlon} deg/pixel')
+
+            raise Exception('Testing')
+
+#####################################################################################################################################
         else:
+            # Delta latitude and longitude
+            dlat = desc[f'{type}.row_mult']['value']
+            dlon = desc[f'{type}.col_mult']['value']
+            log.debug(f'latitude delta: {dlat}, longitude delta: {dlon} deg/pixel')
             # Upper left corner coordinates
             lat1 = desc[f'{type}.row_addr']['value']
             lon1 = desc[f'{type}.col_addr']['value']
             log.debug(f'Ref Latitude: {lat1}, Longitude: {lon1} degrees')
+
+        # Get data type specific data
         bytes = desc[f'{type}.val_size']['value']
         endian = desc['val_endi']['value']
         log.debug(f'Bytes = {bytes}, Endian = {endian}')
@@ -309,7 +393,7 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
         # Lat1/lon1 are already the center so for geotiff were good to go.
         t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
 
-        for i, comp in enumerate(['real', 'imaginary']):
+        for comp in ['real', 'imaginary']:
             if comp in z.dtype.names:
                 d = z[comp]
                 log.debug(f'Writing {comp} component to {out_fp}...')
@@ -333,7 +417,7 @@ if __name__ == '__main__':
     urls = pd.read_csv('../tests/data/urls')
     for i, url in enumerate(urls.iloc[:,0]):
         #if 'asf.alaska.edu' not in url:
-        if i == 28:
+        if i == 6:
             try:
                 down_fp = download_image(url, output_dir = '../data/imgs', ann = True)
                 print(f'Results == {down_fp}')
@@ -367,5 +451,5 @@ if __name__ == '__main__':
 #i = 23 - ANN file. Downloaded and asserted appropriately
 #i = 24 - ZIP file. Downloaded and asserted appropriately
 #i = 25 - SLT range that need to have lat long calculated
-#i = 26 - Downloaded and converted
+#i = 26 - Downloaded and converted~
 #i = 27 - SLT range that need to have lat long calculated
