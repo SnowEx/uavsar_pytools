@@ -175,7 +175,7 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
         ann_fp (string): path to UAVSAR annotation file
     """
     # Determine type of image
-    if isdir(in_fp):
+    if isdir(out_fp):
         raise Exception('Provide filepath not the directory.')
 
     if not exists(in_fp):
@@ -214,6 +214,8 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
         raise Exception('Can not convert zipped directories. Unzip first.')
     if type == 'dat' or type == 'kmz' or type == 'kml' or type == '.png':
         raise Exception(f'Can not handle {type} products')
+    if type == 'slc' or type == 'mlc':
+        raise Exception('Unable to convert slant range products to WGS84. Download and convert .grd file')
     if subtype == 'kmz':
         raise Exception('Can not handle kmz interferograms.')
     if type == 'ann':
@@ -252,39 +254,17 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
         slant = None
         if not anc:
             if mode == 'polsar':
-                look_dir = desc['look direction']['value']
-                if type == 'slc':
-                    type = f'{type}_amp'
-                    slant = True
-                elif type == 'mlc':
-                    polarization = basename(in_fp).split('_')[5][-4:]
-                    log.debug(f'Using Polarization of {polarization}')
-                    assert len(polarization) == 4, 'Unable to determine polarization of MLC file.'
-                    if polarization == 'HHHH' or polarization == 'HVHV' or polarization == 'VVVV':
-                        type = f'{type}_pwr'
-                    else:
-                        type = f'{type}_mag'
-                    slant = True
-                elif type == 'grd':
-                    type = f'{type}_mag'
+                type = f'{type}_mag'
 
             elif mode == 'insar':
-                look_dir = desc['radar look direction']['value']
                 if type == 'slc':
                     type = f'{type}_amp'
-                if subtype == None:
-                    if type == 'int':
-                        type = 'slt_phs'
-                    else:
-                        type = 'slt'
-                    slant = True
-                if subtype == 'grd':
-                    if type == 'int':
-                        type = 'grd_phs'
-                    else:
-                        type = 'grd'
+                if type == 'int':
+                    type = 'grd_phs'
+                else:
+                    type = 'grd'
 
-        log.info(f'type = {type}')
+        log.debug(f'type: {type}')
 
         # Pull the appropriate values from our annotation dictionary
         nrow = desc[f'{type}.set_rows']['value']
@@ -310,7 +290,6 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
         log.debug(f'Bytes = {bytes}, Endian = {endian}')
 
         # Set up datatypes
-        log.debug(type)
         com_des = desc[f'{type}.val_frmt']['value']
         com = False
         if 'COMPLEX' in com_des:
@@ -332,7 +311,6 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
 
         # Build the transform and CRS
         crs = CRS.from_user_input("EPSG:4326")
-        crs = CRS.from_user_input("EPSG:32713")
 
         for comp in ['real', 'imaginary']:
             if comp in z.dtype.names:
@@ -353,12 +331,13 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
                 dataset.write(d, 1)
 
                 dataset.close()
+        log.info('Finished converting image to WGS84 Geotiff.')
 
 if __name__ == '__main__':
     urls = pd.read_csv('../tests/data/urls')
     for i, url in enumerate(urls.iloc[:,0]):
         #if 'asf.alaska.edu' not in url:
-        if i == 22:
+        if i == 1:
             try:
                 down_fp = download_image(url, output_dir = '../data/imgs', ann = True)
                 print(f'Results == {down_fp}')
