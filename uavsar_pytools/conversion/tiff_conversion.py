@@ -1,5 +1,5 @@
 """
-Originally written by Micah J. into python. Amended for uavsar_pytools by Zach Keskinen.
+Originally written by Micah J. Amended for uavsar_pytools by Zach Keskinen.
 Functions convert polsar, insar, and other associated UAVSAR files from binary format to geoTIFFS in WGS84.
 """
 
@@ -16,7 +16,7 @@ from rasterio.crs import CRS
 from pyproj import Geod, Proj
 import logging
 
-from download import download_image
+from uavsar_pytools.download.download import download_image
 
 log = logging.getLogger(__name__)
 logging.basicConfig()
