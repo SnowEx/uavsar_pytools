@@ -291,76 +291,18 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
         ncol = desc[f'{type}.set_cols']['value']
         log.debug(f'rows: {nrow} x cols: {ncol} pixels')
 
-        if slant:
-            # Delta latitude and longitude
-            dazi = desc[f'{type}.row_mult']['value']
-            drange = desc[f'{type}.col_mult']['value']
-            log.debug(f'azimuth delta: {dazi}, range delta: {drange} m/pixel')
+        # Ground projected images
+        # Delta latitude and longitude
+        dlat = desc[f'{type}.row_mult']['value']
+        dlon = desc[f'{type}.col_mult']['value']
+        log.debug(f'latitude delta: {dlat}, longitude delta: {dlon} deg/pixel')
+        # Upper left corner coordinates
+        lat1 = desc[f'{type}.row_addr']['value']
+        lon1 = desc[f'{type}.col_addr']['value']
+        log.debug(f'Ref Latitude: {lat1}, Longitude: {lon1} degrees')
 
-            # Calculate upper left corner
-            peg_lat = desc['set_plat']['value'] # degrees
-            peg_lon = desc['set_plon']['value'] # degrees
-            peg_head = desc['set_phdg']['value'] # degrees
-            # Upper left corner coordinates
-            azi_offset = desc[f'{type}.row_addr']['value'] # meters of cross-track offset from peg of upper left pixel
-            range_offset = desc[f'{type}.col_addr']['value'] # meters of along-track offset from peg of upper left pixel
-
-################HOW TO SOLVE FOR LAT LONG? CAN WE USE GRD LAT LONGS OR DOES THE MULTILOOKING MAKE THAT WRONG?##############################################################
-            print(f'peg: {peg_lat}, {peg_lon}, {peg_head}')
-            print(f'cross-track offset {range_offset} m, along-track {azi_offset} m')
-            g = Geod(a = float(desc['ellipsoid semi-major axis']['value']), es = float(desc['ellipsoid eccentricity squared']['value']))
-
-            rot = peg_head
-            peg_head, _  = heading_angle_correction(peg_head, 1)
-            azi_offset = abs(azi_offset)
-            azilon, azilat, _ = g.fwd(peg_lon, peg_lat, peg_head, azi_offset)
-            print(f'Azimuth shifted {azilat}, {azilon}')
-            if look_dir == 'Left':
-                range_head = peg_head - 90 # left facing
-            elif look_dir == 'Right':
-                range_head = peg_head + 90 # left facing
-
-            range_head, _ = heading_angle_correction(range_head, 1)
-            range_head = abs(range_head)
-
-            lon1, lat1, _ = g.fwd(azilon, azilat, range_head, range_offset)
-            print(f'{lat1}, {lon1}')
-            log.debug(f'Approximate radar latitude: {lat1}, longitude: {lon1} degrees')
-
-            P = Proj("epsg:32713")
-            G = Geod(ellps='WGS84')
-            print(lat1)
-            print(lon1)
-            x,y = P(lat1, lon1, inverse=True)
-            print(x)
-            print(y)
-            # COMPARISON TO REMOVE
-            lat1_grd = desc['grd_mag.row_addr']['value']
-            lon1_grd = desc['grd_mag.col_addr']['value']
-            log.debug(f'Compared to ground range coords {lat1_grd}, {lon1_grd}')
-
-            ##DX DY TESTING
-
-
-            grd_dlat, grd_dlon = desc['grd_mag.row_mult']['value'], desc['grd_mag.col_mult']['value']
-            print(f'grd spacing: {grd_dlat} x {grd_dlon} deg/pixel')
-            print(peg_head)
-            t = Affine.translation(x, y) * Affine.scale(dazi, drange) * Affine.rotation(rot)
-
-#####################################################################################################################################
-        else:
-            # Ground projected images
-            # Delta latitude and longitude
-            dlat = desc[f'{type}.row_mult']['value']
-            dlon = desc[f'{type}.col_mult']['value']
-            log.debug(f'latitude delta: {dlat}, longitude delta: {dlon} deg/pixel')
-            # Upper left corner coordinates
-            lat1 = desc[f'{type}.row_addr']['value']
-            lon1 = desc[f'{type}.col_addr']['value']
-            log.debug(f'Ref Latitude: {lat1}, Longitude: {lon1} degrees')
-
-            # Lat1/lon1 are already the center so for geotiff were good to go.
-            t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
+        # Lat1/lon1 are already the center so for geotiff were good to go.
+        t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
 
         # Get data type specific data
         bytes = desc[f'{type}.val_size']['value']
