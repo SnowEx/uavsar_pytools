@@ -132,37 +132,7 @@ def read_annotation(ann_file):
 
     return data
 
-def heading_angle_correction(angle, dist):
-    """
-    Function to convert UAVSAR headings in range and azimuth direction to between 0 - 360. Converts
-    heading to opposite direction for negative offsets.
-
-    Args:
-        angle (float) - heading of offset from some lat long
-        dist (float) - distance of offset from some lat long
-
-    Returns:
-        angle (float) - angle converted to between 0 - 360 degrees.
-        dist (float) - distance converted to > 0
-    """
-    if angle < 0:
-        adj_angle = angle + 360
-    elif angle > 360:
-        adj_angle = angle - 360
-    elif angle <=360 or angle >=0:
-        adj_angle = angle
-
-    if dist < 0:
-        if adj_angle < 180:
-            adj_angle = adj_angle + 180
-        else:
-            adj_angle = adj_angle - 180
-        dist = abs(dist)
-
-
-    return adj_angle, dist
-
-def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
+def grd_tiff_convert(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
     """
     Converts a single binary image either polsar or insar to geotiff.
     See: https://uavsar.jpl.nasa.gov/science/documents/polsar-format.html for polsar
@@ -212,10 +182,10 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
     # Check for compatible extensions
     if type == 'zip':
         raise Exception('Can not convert zipped directories. Unzip first.')
-    if type == 'dat' or type == 'kmz' or type == 'kml' or type == '.png':
+    if type == 'dat' or type == 'kmz' or type == 'kml' or type == '.png' or type == 'tif':
         raise Exception(f'Can not handle {type} products')
     if type == 'slc' or type == 'mlc':
-        raise Exception('Unable to convert slant range products to WGS84. Download and convert .grd file')
+        raise Exception('Unable to convert slant range products to WGS84. Download and convert .grd file.')
     if subtype == 'kmz':
         raise Exception('Can not handle kmz interferograms.')
     if type == 'ann':
@@ -257,12 +227,12 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
                 type = f'{type}_mag'
 
             elif mode == 'insar':
-                if type == 'slc':
-                    type = f'{type}_amp'
                 if type == 'int':
                     type = 'grd_phs'
                 else:
                     type = 'grd'
+                if subtype == None:
+                    raise Exception('Unable to convert slant range. Download and convert .grd file.')
 
         log.debug(f'type: {type}')
 
@@ -315,6 +285,9 @@ def convert_image(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
         for comp in ['real', 'imaginary']:
             if comp in z.dtype.names:
                 d = z[comp]
+                # Change zeros to nans based on documentation.
+                d[d==0]= np.nan
+
                 log.debug(f'Writing {comp} component to {out_fp}...')
                 dataset = rasterio.open(
                     out_fp,
@@ -337,39 +310,10 @@ if __name__ == '__main__':
     urls = pd.read_csv('../tests/data/urls')
     for i, url in enumerate(urls.iloc[:,0]):
         #if 'asf.alaska.edu' not in url:
-        if i == 1:
+        if i == 22:
             try:
                 down_fp = download_image(url, output_dir = '../data/imgs', ann = True)
                 print(f'Results == {down_fp}')
                 convert_image(down_fp, out_fp = down_fp + '.tiff', overwrite = True)
             except Exception as e:
                 print(e)
-
-# convert_image(in_fp = '../data/imgs/Rosamd_35012_21067_013_211124_L090VVVV_CX_01.grd', out_fp= '../data/imgs/test.tiff', ann_fp= '../data/imgs/Rosamd_35012_21067_013_211124_L090_CX_01.ann')
-#i = 1 - 503 server error. Handled
-#i = 2 - 503 server error. Handled
-#i = 3 - ANN file. Downloaded and asserted appropriately
-#i = 4 - DAT file. Downloaded and asserted appropriately
-#i = 5 - 503 server error. Handled
-#i = 6 - mlc file that need to have lat long calculated
-#i = 7 - mlc file that need to have lat long calculated
-#i = 8 - DAT file. Downloaded and asserted appropriately
-#i = 9 - Downloaded and converted
-#i = 10 - Downloaded and converted
-#i = 11 - Downloaded and converted
-#i = 12 - Downloaded and converted
-#i = 13 - ANN file. Downloaded and asserted appropriately
-#i = 14 - 404 error. Not found on chrome either.
-#i = 15 - SLT range that need to have lat long calculated
-#i = 16 - Downloaded and converted
-#i = 17 - ANN file. Downloaded and asserted appropriately
-#i = 18 - mlc file that need to have lat long calculated
-#i = 19 - Downloaded and converted
-#i = 20 - Downloaded and converted
-#i = 21 - Downloaded and converted
-#i = 22 - SLT range that need to have lat long calculated
-#i = 23 - ANN file. Downloaded and asserted appropriately
-#i = 24 - ZIP file. Downloaded and asserted appropriately
-#i = 25 - SLT range that need to have lat long calculated
-#i = 26 - Downloaded and converted~
-#i = 27 - SLT range that need to have lat long calculated
