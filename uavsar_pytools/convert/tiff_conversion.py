@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import pytz
 import rasterio
-from rasterio.transform import Affine, from_origin
+from rasterio.transform import Affine
 from rasterio.crs import CRS
 from pyproj import Geod, Proj
 import logging
@@ -20,7 +20,7 @@ from uavsar_pytools.download.download import download_image
 
 log = logging.getLogger(__name__)
 logging.basicConfig()
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 
 def get_encapsulated(str_line, encapsulator):
     """
@@ -132,7 +132,7 @@ def read_annotation(ann_file):
 
     return data
 
-def grd_tiff_convert(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
+def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user'):
     """
     Converts a single binary image either polsar or insar to geotiff.
     See: https://uavsar.jpl.nasa.gov/science/documents/polsar-format.html for polsar
@@ -141,11 +141,13 @@ def grd_tiff_convert(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
 
     Args:
         in_fp (string): path to input binary file
-        out_fp (string): path to save geotiff at
+        out_dir (string): directory to save geotiff in
         ann_fp (string): path to UAVSAR annotation file
     """
+    out_fp = join(out_dir, basename(in_fp)) + '.tiff'
+
     # Determine type of image
-    if isdir(out_fp):
+    if isfile(out_dir):
         raise Exception('Provide filepath not the directory.')
 
     if not exists(in_fp):
@@ -306,14 +308,4 @@ def grd_tiff_convert(in_fp, out_fp, ann_fp = None, overwrite = 'user'):
                 dataset.close()
         log.info('Finished converting image to WGS84 Geotiff.')
 
-if __name__ == '__main__':
-    urls = pd.read_csv('../tests/data/urls')
-    for i, url in enumerate(urls.iloc[:,0]):
-        #if 'asf.alaska.edu' not in url:
-        if i == 22:
-            try:
-                down_fp = download_image(url, output_dir = '../data/imgs', ann = True)
-                print(f'Results == {down_fp}')
-                convert_image(down_fp, out_fp = down_fp + '.tiff', overwrite = True)
-            except Exception as e:
-                print(e)
+        return desc, z

@@ -104,4 +104,4 @@ def download_image(url, output_dir, ann = False):
                     stream_download(ann_url, ann_local)
                 else:
                     log.info(f'{ann_local} already exists, skipping download!')
-    return local
+    return local, ann_local
