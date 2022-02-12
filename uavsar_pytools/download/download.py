@@ -12,6 +12,8 @@ from os.path import join, isdir, isfile, basename, dirname
 from tqdm.auto import tqdm
 import logging
 
+import time
+
 log = logging.getLogger(__name__)
 logging.basicConfig()
 log.setLevel(logging.WARNING)
@@ -104,4 +106,6 @@ def download_image(url, output_dir, ann = False):
                     stream_download(ann_url, ann_local)
                 else:
                     log.info(f'{ann_local} already exists, skipping download!')
-    return local, ann_local
+                return local, ann_local
+
+        return local, None

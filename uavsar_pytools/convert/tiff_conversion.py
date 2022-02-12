@@ -4,7 +4,7 @@ Functions convert polsar, insar, and other associated UAVSAR files from binary f
 """
 
 import os
-from os.path import isdir, exists, basename, dirname
+from os.path import isdir, exists, basename, dirname, join, isfile
 from glob import glob
 from tqdm import tqdm
 import numpy as np
@@ -15,8 +15,6 @@ from rasterio.transform import Affine
 from rasterio.crs import CRS
 from pyproj import Geod, Proj
 import logging
-
-from uavsar_pytools.download.download import download_image
 
 log = logging.getLogger(__name__)
 logging.basicConfig()
@@ -287,8 +285,11 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user'):
         for comp in ['real', 'imaginary']:
             if comp in z.dtype.names:
                 d = z[comp]
-                # Change zeros to nans based on documentation.
+                # Change zeros and -10,000 to nans based on documentation.
                 d[d==0]= np.nan
+                d[d==-10000]= np.nan
+                if type == 'slope':
+                    d[d == np.nanmin(d)] = np.nan
 
                 log.debug(f'Writing {comp} component to {out_fp}...')
                 dataset = rasterio.open(
@@ -308,4 +309,4 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user'):
                 dataset.close()
         log.info('Finished converting image to WGS84 Geotiff.')
 
-        return desc, z
+        return desc, z, type
