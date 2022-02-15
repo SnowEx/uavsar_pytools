@@ -18,7 +18,7 @@ import logging
 
 log = logging.getLogger(__name__)
 logging.basicConfig()
-log.setLevel(logging.INFO)
+log.setLevel(logging.WARNING)
 
 def get_encapsulated(str_line, encapsulator):
     """
@@ -224,7 +224,13 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user'):
         slant = None
         if not anc:
             if mode == 'polsar':
-                type = f'{type}_mag'
+                polarization = basename(in_fp).split('_')[5][-4:]
+                if type == 'grd':
+                    if polarization == 'HHHH' or polarization == 'HVHV' or polarization == 'VVVV':
+                            type = f'{type}_pwr'
+                    else:
+                        type = f'{type}_mag'
+                # type = f'{type}_pwr'
 
             elif mode == 'insar':
                 if type == 'int':

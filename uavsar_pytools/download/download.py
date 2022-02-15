@@ -64,9 +64,11 @@ def download_image(url, output_dir, ann = False):
         log.info(f'{local} already exists, skipping download!')
 
     if ann:
+        ann_url = None
         if url.split('.')[-1] == 'zip' or url.split('.')[-1] == 'ann':
             log.info('Download already contains ann file, skipping download!')
         else:
+            # see if we can use the parent directory to extract the annotation file
             parent = dirname(url)
             # ASF formatting - query parent directory
             if parent.split('.')[-1] == 'zip':
@@ -77,9 +79,9 @@ def download_image(url, output_dir, ann = False):
                 ann_url = ann_info['url']
                 log.debug(f'Annotation url: {ann_url}')
 
-            # JPL formatting - have to parse url to get ann
-            elif 'uavsar.asfdaac.alaska.edu' in url:
-                log.debug(f'JPL url found for {url}')
+            # Can't find zip parent directory - have to parse url to get ann
+            else:
+                log.debug(f'Can not find zip parent directory.')
                 ext = url.split('.')[-1]
                 pols = ['VVVV','HHHH','HVHV', 'HHHV', 'HHVV','HVVV']
                 slc_pol = [pol for pol in pols if (pol in url)]
@@ -93,11 +95,13 @@ def download_image(url, output_dir, ann = False):
                         url = url.replace('.grd','')
                     ext = url.split('.')[-1]
                 ann_url = url.replace(f'.{ext}', '.ann')
-                log.debug(f'Annotation url: {ann_url}')
+                log.debug(f'Parsed annotation url: {ann_url}')
 
-            else:
-                log.warning('No ann url found. Unable to download ann file.')
-                ann_url = None
+                response = requests.get(ann_url)
+                if response.status_code == 200:
+                    log.debug('Success in parsing ann url')
+                else:
+                    ann_url = None
 
             if ann_url:
                 ann_local = join(output_dir, basename(ann_url))
@@ -107,5 +111,8 @@ def download_image(url, output_dir, ann = False):
                 else:
                     log.info(f'{ann_local} already exists, skipping download!')
                 return local, ann_local
+            else:
+                log.warning('No ann url found. Manually provide .ann url.')
+                ann_url = None
 
         return local, None
