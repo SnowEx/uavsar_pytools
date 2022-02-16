@@ -116,3 +116,29 @@ def download_image(url, output_dir, ann = False):
                 ann_url = None
 
         return local, None
+
+def download_zip(url, output_dir):
+    """
+    Downloads uavsar InSAR files from a zip url.
+    Args:
+        url (string): A url containing uavsar flight zip. Can be from JPL or ASF
+        output_dir (string): Directory to save the data in
+    Returns:
+        out_fp (string): File path to downloaded images.
+    Raises:
+       None
+    """
+
+    log.info(f'Starting download of {url}...')
+
+    # Make the output dir if it doesn't exist
+    if not isdir(output_dir):
+        os.makedirs(output_dir)
+
+    if not isfile(local):
+        local = join(output_dir, basename(url))
+        stream_download(url, local)
+    else:
+        log.info(f'{local} already exists, skipping download!')
+
+        return local, None
