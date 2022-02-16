@@ -107,6 +107,12 @@ class UavsarScene():
             desc, array, type = grd_tiff_convert(f, out_dir, ann_fp = ann_fp, overwrite = True)
             self.images.append({'description': desc, 'array':  array, 'type': type})
 
+    def url_to_tiffs(self):
+        self.download()
+        self.unzip()
+        self.binary_to_tiffs()
+
+
     def show(self, i):
         """
         Convenience function for checking a few images within the zip file for successful conversion.
