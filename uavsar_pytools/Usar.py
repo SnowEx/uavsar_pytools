@@ -9,7 +9,7 @@ from uavsar_pytools.UavsarImg import UavsarImg
 
 logging.basicConfig()
 
-class UsarZip():
+class Usar():
     """
     Class to handle uavsar zip directories. Methods include downloading and converting images.
 
@@ -26,19 +26,26 @@ class UsarZip():
         desc (dict) = description of image from annotation file.
     """
 
+    binary_fp = None
+    ann_fp = None
+
     def __init__(self, url, work_dir, debug = False):
         self.url = url
         self.work_dir = work_dir
         self.debug = debug
 
 
-    def download(self, sub_dir = 'bin_imgs/'):
+    def download(self, sub_dir = 'bin_imgs/', ann = True):
         """
-        Download an uavsar image from a ASF or JPL url.
+        Download an uavsar image or zip file from a ASF or JPL url.
         Args:
             download_dir (str): directory to download image to. Will be created if it doesn't exists.
+            ann (bool): download associated annotation file? [default = True]
         """
         out_dir = os.path.join(self.work_dir,sub_dir)
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
-        self.binary_fp, self.ann_fp = download_zip(self.url, out_dir)
+        if self.url.split('.')[-1] == 'zip':
+            self.binary_fp, self.ann_fp = download_zip(self.url, out_dir)
+        else:
+            self.binary_fp = download_image(self.url, out_dir, ann = ann)

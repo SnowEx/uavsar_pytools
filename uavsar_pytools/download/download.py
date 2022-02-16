@@ -141,4 +141,4 @@ def download_zip(url, output_dir):
     else:
         log.info(f'{local} already exists, skipping download!')
 
-        return local, None
+    return local
