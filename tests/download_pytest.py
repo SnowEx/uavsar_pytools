@@ -1,10 +1,8 @@
 """Tests for `uavsar_pytools` downloading functionality."""
-# remove path add once added to pypip
-from genericpath import isfile
 import sys
 sys.path.append('../')
 
-from uavsar_pytools.download import download_image
+from uavsar_pytools.download.download import download_image
 import pandas as pd
 from os.path import join, basename, isfile
 import shutil
