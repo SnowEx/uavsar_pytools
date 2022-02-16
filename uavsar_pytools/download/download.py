@@ -135,8 +135,9 @@ def download_zip(url, output_dir):
     if not isdir(output_dir):
         os.makedirs(output_dir)
 
+    local = join(output_dir, basename(url))
+
     if not isfile(local):
-        local = join(output_dir, basename(url))
         stream_download(url, local)
     else:
         log.info(f'{local} already exists, skipping download!')

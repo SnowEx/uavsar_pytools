@@ -4,7 +4,7 @@ File control functions for uavsar_pytools.
 
 from zipfile import ZipFile
 from tqdm import tqdm
-from os import makedirs, isdir
+from os.path import exists, join
 
 def unzip(dir_path, out_dir):
     """
@@ -15,15 +15,16 @@ def unzip(dir_path, out_dir):
         dir_path (string) - path to zipped directory to unpack
         out_dir (string) - path to directory to extract files to.
     """
-    assert isdir(dir_path), f'Zipped directory at {dir_path} not found.'
-    makedirs(out_dir, exist_ok= True)
+    assert exists(dir_path), f'Zipped directory at {dir_path} not found.'
 
     # Open your .zip file
     with ZipFile(file=dir_path) as zip_file:
 
+        checked_list = [f for f in zip_file.namelist() if not exists(join(out_dir, f))]
         # Loop over each file
-        for file in tqdm(iterable=zip_file.namelist(), total=len(zip_file.namelist())):
+        if checked_list:
+            for file in tqdm(iterable=checked_list, total=len(zip_file.namelist()), unit = 'file', desc='Unzipping'):
+                # Extract each file to another directory
+                zip_file.extract(member=file, path=out_dir)
 
-            # Extract each file to another directory
-            # If you want to extract to current working directory, don't specify path
-            zip_file.extract(member=file, path=out_dir)
+    return [join(out_dir, fp) for fp in zip_file.namelist()]

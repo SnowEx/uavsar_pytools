@@ -8,7 +8,7 @@ from uavsar_pytools.convert.tiff_conversion import grd_tiff_convert
 
 logging.basicConfig()
 
-class UavsarImg():
+class UavsarImage():
     """
     Class to handle individual uavsar images. Methods include downloading and converting images.
 
