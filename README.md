@@ -10,7 +10,7 @@ We are working to make this package pip installable. For now git clone this repo
 
 ## Usage
 
-The fundamental class of uavsar_pytool is the `UavsarScene`. This class is used for downloading, unzipping, and converting binary Uavsar files into Geotiffs in WGS84. In order to use the class you will need to instantiate an instance of the class to hold your specific url and the image data. Please see the included tutorial and code snippet below. After instantiating the class you can call `scene.url_to_tiffs()` to fully download and convert the Uavsar images into analysis ready tiffs. The two required inputs are a url to an ASF or JPL zip file that has been ground referenced and a directory that you want to store the image files in.
+The fundamental class of uavsar_pytool is the `UavsarScene`. This class is used for downloading, unzipping, and converting binary Uavsar files into Geotiffs in WGS84. In order to use the class you will need to instantiate an instance of the class to hold your specific url and the image data. Please see the included tutorial and code snippet below. After instantiating the class you can call `scene.url_to_tiffs()` to fully download and convert the Uavsar images into analysis ready tiffs. The two required inputs are a url to an ASF or JPL zip file (if looking to download a single image see `UavsarImage` in the included notebookes', and that has been ground referenced (must have a .grd or \_grd in the name) along with a directory that you want to store the image files in.
 
 ```python
 from uavsar_pytools.UavsarScene import UavsarScene
