@@ -1,12 +1,12 @@
 # uavsar_pytools
 
-<img src="https://github.com/SnowEx/uavsar_pytools/blob/main/title_figure.png" width="1800">
+<img src="https://github.com/SnowEx/uavsar_pytools/blob/main/title_figure.png" width="1600">
 
 Python tools to download and convert binary Uavsar images from the Alaska Satellite Facility and Jet Propulsion Laboratory databases. Developed by Zachary Keskinen and Jack Tarricone with advice and guidance from Dr. Hans Peter Marshall of Boise State University, Micah Johnson with m3works, and Micah Sandusky with m3works.
 
 ## Installing
 
-For now git clone
+We are working to make this package pip installable. For now git clone this repo using `git clone https://github.com/SnowEx/uavsar_pytools.git` in the directory you want to store the repo in.
 
 ## Usage
 
