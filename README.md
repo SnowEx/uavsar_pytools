@@ -1,8 +1,6 @@
 # uavsar_pytools
 
-<img src="https://github.com/SnowEx/uavsar_pytools/blob/main/title_figure.png" width="2000">
-
-![UAVSAR image](title_figure.png?raw=true "UAVSAR Image from over the Sawtooth Mountains.")
+<img src="https://github.com/SnowEx/uavsar_pytools/blob/main/title_figure.png" width="1800">
 
 Python tools to download and convert binary Uavsar images from the Alaska Satellite Facility and Jet Propulsion Laboratory databases. Developed by Zachary Keskinen and Jack Tarricone with advice and guidance from Dr. Hans Peter Marshall of Boise State University, Micah Johnson with m3works, and Micah Sandusky with m3works.
 
