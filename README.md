@@ -27,8 +27,8 @@ print(scene.image[0]['type'] # figure out the type of the first image
 scene.images[0]['array'] # get the first image numpy array for analysis
 ```
 
-For quick checks to visualize the data there is also a convenience method `scene.show(i = 1)` that allows you to quickly visualize the first image (or by iterating on i = 2,3,4, etc all the images in the zip file. This method is also available after converting binary images to array with `scene.url_to_tiffs()`.
+For quick checks to visualize the data there is also a convenience method `scene.show(i = 1)` that allows you to quickly visualize the first image, or by iterating on i = 2,3,4, etc all the images in the zip file. This method is only available after converting binary images to array with `scene.url_to_tiffs()`.
 
 ## Need more help?
 
-The notebook folder in this repository has example notebooks for how to utilize this repository.
+The notebook folder in this repository has example notebooks for how to utilize this repository or reach out with questions, features, bugs, or anything else.
