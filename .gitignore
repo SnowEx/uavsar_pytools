@@ -4,3 +4,4 @@
 /test/data/imgs/*
 ./testing.ipynb
 .DS_Store
+.ipynb_checkpoints/
