@@ -17,3 +17,4 @@ dependencies:
   - pip
   - nb_conda_kernels
   - ipykernel
+  - ipywidgets
