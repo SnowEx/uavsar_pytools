@@ -1,0 +1,19 @@
+name: uavsar_pytools
+channels:
+  - conda-forge
+  - defaults
+  - anaconda
+dependencies:
+  - python
+  - asf_search
+  - progressbar
+  - tqdm
+  - requests
+  - folium
+  - geopandas
+  - numpy
+  - rasterio
+  - matplotlib
+  - pip
+  - nb_conda_kernels
+  - ipykernel
