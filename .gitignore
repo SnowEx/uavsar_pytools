@@ -3,3 +3,4 @@
 *.grd
 /test/data/imgs/*
 ./testing.ipynb
+.DS_Store
