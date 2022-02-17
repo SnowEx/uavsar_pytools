@@ -1,6 +1,14 @@
 # uavsar_pytools
 
-Python tools to download and convert binary Uavsar images from the Alaska Satellite Facility and Jet Propulsion Laboratory databases.
+![UAVSAR image](HV_map.png?raw=true "UAVSAR Image from over the Sawtooth Mountains.")
+
+Python tools to download and convert binary Uavsar images from the Alaska Satellite Facility and Jet Propulsion Laboratory databases. Developed by Zachary Keskinen and Jack Tarricone with advice and guidance from Dr. Hans Peter Marshall of Boise State University, Micah Johnson with m3works, and Micah Sandusky with m3works.
+
+## Installing
+
+For now git clone
+
+## Usage
 
 The fundamental class of uavsar_pytool is the `UavsarScene`. This class is used for downloading, unzipping, and converting binary Uavsar files into Geotiffs in WGS84. In order to use the class you will need to instantiate an instance of the class to hold your specific url and the image data. Please see the included tutorial and code snippet below. After instantiating the class you can call `scene.url_to_tiffs()` to fully download and convert the Uavsar images into analysis ready tiffs. The two required inputs are a url to an ASF or JPL zip file that has been ground referenced and a directory that you want to store the image files in.
 
