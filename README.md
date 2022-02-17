@@ -1,6 +1,6 @@
 # uavsar_pytools
 
-<img src="https://github.com/SnowEx/uavsar_pytools/blob/main/title_figure.png" width="600">
+<img src="https://github.com/SnowEx/uavsar_pytools/blob/main/title_figure.png" width="2000">
 
 ![UAVSAR image](title_figure.png?raw=true "UAVSAR Image from over the Sawtooth Mountains.")
 
