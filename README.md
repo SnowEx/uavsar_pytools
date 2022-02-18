@@ -6,11 +6,33 @@ Python tools to download and convert binary Uavsar images from the Alaska Satell
 
 ## Installing
 
-We are working to make this package pip installable. For now git clone this repo using `git clone https://github.com/SnowEx/uavsar_pytools.git` in the directory you want to store the repo in.
+We are working to make this package pip installable. To run this repository locally using Jupyter Lab or Notebook:
+
+1. Navigate to where you want the files stored, and clone it to your local machine:
+
+```console
+ git clone https://github.com/SnowEx/uavsar_pytools.git
+ ```
+
+2. Install the environment. The repository includes an environment.yml that contains a list of all the packages needed to run this tutorial. These lines will also activate your widget extension for the download progress bar. To install them using conda run:
+
+```console
+conda env create -f environment.yml
+conda activate uavsar_pytools
+jupyter nbextension enable --py widgetsnbextension
+python -m ipykernel install --user --name=uavsar_pytools
+```
+
+3. Start Jupyter:
+
+```console
+jupyter-lab
+```
+
 
 ## Usage
 
-The fundamental class of uavsar_pytool is the `UavsarScene`. This class is used for downloading, unzipping, and converting binary Uavsar files into Geotiffs in WGS84. In order to use the class you will need to instantiate an instance of the class to hold your specific url and the image data. Please see the included tutorial and code snippet below. After instantiating the class you can call `scene.url_to_tiffs()` to fully download and convert the Uavsar images into analysis ready tiffs. The two required inputs are a url to an ASF or JPL zip file (if looking to download a single image see `UavsarImage` in the included notebooks) and that has been ground referenced (must have a .grd or \_grd in the name) along with a directory that you want to store the image files in.
+The fundamental class of uavsar_pytools is the `UavsarScene`. This class is used for downloading, unzipping, and converting binary UAVSAR files into Geotiffs in WGS84. In order to use the class you will need to instantiate an instance of the class to hold your specific url and the image data. Please see the included tutorial and code snippet below. After instantiating the class you can call `scene.url_to_tiffs()` to fully download and convert the Uavsar images into analysis ready tiffs. The two required inputs are a url to an ASF or JPL zip file (if looking to download a single image see `UavsarImage` in the included notebooks) and that has been ground referenced (must have a .grd or \_grd in the name) along with a directory that you want to store the image files in.
 
 ```python
 from uavsar_pytools.UavsarScene import UavsarScene
