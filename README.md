@@ -8,10 +8,10 @@ Python tools to download and convert binary Uavsar images from the Alaska Satell
 
 We are working to make this package pip installable. To run this repository locally using Jupyter Lab or Notebook:
 
-1. Clone it to your local machine.
+1. Navigate to where you want the files stored, and clone it to your local machine:
 
 ```console
- git clone https://github.com/SnowEx/uavsar_pytools.git in the directory you want to store the repo in.
+ git clone https://github.com/SnowEx/uavsar_pytools.git
  ```
 
 2. Install the environment. The repository includes an environment.yml that contains a list of all the packages needed to run this tutorial. These lines will also activate your widget extension for to the download progress bar. To install them using conda run:
