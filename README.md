@@ -11,10 +11,10 @@ We are working to make this package pip installable. To run this repository loca
 1. Clone it to your local machine.
 
 ```console
- `git clone https://github.com/SnowEx/uavsar_pytools.git` in the directory you want to store the repo in.
+ git clone https://github.com/SnowEx/uavsar_pytools.git in the directory you want to store the repo in.
  ```
 
-2. Install the environment. The repository includes an environment.yml that contains a list of all the packages needed to run this tutorial. To install them using conda run:
+2. Install the environment. The repository includes an environment.yml that contains a list of all the packages needed to run this tutorial. These lines will also activate your widget extension for to the download progress bar. To install them using conda run:
 
 ```console
 conda env create -f environment.yml
