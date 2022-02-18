@@ -18,3 +18,4 @@ dependencies:
   - nb_conda_kernels
   - ipykernel
   - ipywidgets
+  - jupyter
