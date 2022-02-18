@@ -14,7 +14,7 @@ We are working to make this package pip installable. To run this repository loca
  git clone https://github.com/SnowEx/uavsar_pytools.git
  ```
 
-2. Install the environment. The repository includes an environment.yml that contains a list of all the packages needed to run this tutorial. These lines will also activate your widget extension for to the download progress bar. To install them using conda run:
+2. Install the environment. The repository includes an environment.yml that contains a list of all the packages needed to run this tutorial. These lines will also activate your widget extension for the download progress bar. To install them using conda run:
 
 ```console
 conda env create -f environment.yml
