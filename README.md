@@ -26,7 +26,7 @@ python -m ipykernel install --user --name=uavsar_pytools
 3. Start Jupyter:
 
 ```console
-jupyter-lab
+jupyter notebook
 ```
 
 
