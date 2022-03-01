@@ -12,7 +12,9 @@ This package is installable with pip. In the terminal enter the following comman
 pip install uavsar_pytools
 ```
 
-You will need a .netrc file in your home directory. This is a special file that stores passwords and usernames to be accessed by programs. If you are already registered at either the alaska satellite facility or jet propulsion laboratory skip step 1. Otherwise: 
+## Authorization
+
+You will need a [.netrc file](https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html) in your home directory. This is a special file that stores passwords and usernames to be accessed by programs. If you are already registered at either the alaska satellite facility or jet propulsion laboratory skip step 1. Otherwise: 
 
 1. If you need a username and password register at [link](https://search.asf.alaska.edu/).
 
@@ -22,7 +24,7 @@ from uavsar_pytools.uavsar_tools import create_netrc
 create_netrc()
 ```
 
-You will be asked to enter your username and password and a netrc file will be automatically generated for you. This file will be accessed during downloading and searching for Uavsar images.
+You will be asked to prompted to enter your username and password and a netrc file will be automatically generated for you. This file will be accessed during downloading and searching for Uavsar images.
 
 ## Usage
 
@@ -36,7 +38,9 @@ scene = UavsarScene(url = zip_url, work_dir= image_directory) #instantiating an 
 scene.url_to_tiffs()
 ```
 
-To get each image's numpy array the class has an `scene.images` property that contains the type, description, and numpy array for each image in the zip file. This is available after running `scene.url_to_tiffs()`.
+You will now have a folder of analysis ready tiff images in WGS84 from the provided url in your specificed work directory.
+
+If you are interested in working with each image's numpy array the class has an `scene.images` property that contains the type, description, and numpy array for each image in the zip file. This is available after running `scene.url_to_tiffs()`.
 
 ```python
 print(scene.image[0]['type'] # figure out the type of the first image
@@ -44,6 +48,12 @@ scene.images[0]['array'] # get the first image numpy array for analysis
 ```
 
 For quick checks to visualize the data there is also a convenience method `scene.show(i = 1)` that allows you to quickly visualize the first image, or by iterating on i = 2,3,4, etc all the images in the zip file. This method is only available after converting binary images to array with `scene.url_to_tiffs()`.
+
+## Finding URLs for your images
+
+The provided jupyter notebook tutorial in the notebooks folder will walk you through generating a bounding box for your area of interest and finding urls through the [asf_search api](https://github.com/asfadmin/Discovery-asf_search). However if you can also use the [vertex website](https://search.asf.alaska.edu/). After drawing a box and selecting UAVSAR from the platform selection pane (circled in red below) you will get a list of search results. Click on the ground projected image you want to download and right click on the download link (circled in orange below). Select ```copy link``` and you will have copied your relevant zip url.
+
+<img src="https://github.com/SnowEx/uavsar_pytools/blob/main/vertex_example.png">
 
 ## Need more help?
 
