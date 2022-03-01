@@ -49,6 +49,12 @@ scene.images[0]['array'] # get the first image numpy array for analysis
 
 For quick checks to visualize the data there is also a convenience method `scene.show(i = 1)` that allows you to quickly visualize the first image, or by iterating on i = 2,3,4, etc all the images in the zip file. This method is only available after converting binary images to array with `scene.url_to_tiffs()`.
 
+## Finding URLs for your images
+
+The provided jupyter notebook tutorial in the notebooks folder will walk you through generating a bounding box for your area of interest and finding urls through the [asf_search api](https://github.com/asfadmin/Discovery-asf_search). However if you can also use the [vertex website](https://search.asf.alaska.edu/). After drawing a box and selecting UAVSAR from the platform selection pane you will get a list of search results.
+
+
+
 ## Need more help?
 
 The notebook folder in this repository has example notebooks for how to utilize this repository or reach out with questions, features, bugs, or anything else.
