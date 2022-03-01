@@ -51,9 +51,9 @@ For quick checks to visualize the data there is also a convenience method `scene
 
 ## Finding URLs for your images
 
-The provided jupyter notebook tutorial in the notebooks folder will walk you through generating a bounding box for your area of interest and finding urls through the [asf_search api](https://github.com/asfadmin/Discovery-asf_search). However if you can also use the [vertex website](https://search.asf.alaska.edu/). After drawing a box and selecting UAVSAR from the platform selection pane you will get a list of search results.
+The provided jupyter notebook tutorial in the notebooks folder will walk you through generating a bounding box for your area of interest and finding urls through the [asf_search api](https://github.com/asfadmin/Discovery-asf_search). However if you can also use the [vertex website](https://search.asf.alaska.edu/). After drawing a box and selecting UAVSAR from the platform selection pane (circled in red below) you will get a list of search results. Click on the ground projected image you want to download and right click on the download link (circled in orange below). Select ```copy link``` and you will have copied your relevant zip url.
 
-
+<img src="https://github.com/SnowEx/uavsar_pytools/blob/main/vertex_example.png">
 
 ## Need more help?
 
