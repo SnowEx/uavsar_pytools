@@ -30,7 +30,8 @@ REQUIRED = [
     'geopandas',
     'numpy',
     'rasterio',
-    'matplotlib'
+    'matplotlib',
+    'getpass'
 ]
 
 # What packages are optional?
