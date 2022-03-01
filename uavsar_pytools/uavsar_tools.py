@@ -30,4 +30,4 @@ def create_netrc():
             f.write('\n')
             f.writelines('\n'.join(lines))
 
-    os.chmod(local, 600)
+    # os.chmod(local, 600)
