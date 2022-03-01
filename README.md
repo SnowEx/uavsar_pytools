@@ -12,6 +12,18 @@ This package is installable with pip. In the terminal enter the following comman
 pip install uavsar_pytools
 ```
 
+You will need a .netrc file in your home directory. This is a special file that stores passwords and usernames to be accessed by programs. If you are already registered at either the alaska satellite facility or jet propulsion laboratory and do not have a netrc file yet use: 
+
+1. If you need a username and password register at (link)[https://search.asf.alaska.edu/#/].
+
+2. In a python terminal or notebook enter:
+'''python
+from uavsar_pytools.uavsar_tools import create_netrc
+create_netrc()
+'''
+
+You will be asked to enter your username and password and a netrc file will be automatically generated for you.
+
 ## Usage
 
 The fundamental class of uavsar_pytools is the `UavsarScene`. This class is used for downloading, unzipping, and converting binary UAVSAR files into Geotiffs in WGS84. In order to use the class you will need to instantiate an instance of the class to hold your specific url and the image data. Please see the included tutorial and code snippet below. After instantiating the class you can call `scene.url_to_tiffs()` to fully download and convert the Uavsar images into analysis ready tiffs. The two required inputs are a url to an ASF or JPL zip file (if looking to download a single image see `UavsarImage` in the included notebooks) and that has been ground referenced (must have a .grd or \_grd in the name) along with a directory that you want to store the image files in.
