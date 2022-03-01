@@ -2,6 +2,8 @@ MANIFEST.in
 README.md
 setup.py
 title_figure.png
+tests/__init__.py
+tests/download_pytest.py
 uavsar_pytools/UavsarImage.py
 uavsar_pytools/UavsarScene.py
 uavsar_pytools/__init__.py
@@ -11,3 +13,6 @@ uavsar_pytools.egg-info/SOURCES.txt
 uavsar_pytools.egg-info/dependency_links.txt
 uavsar_pytools.egg-info/requires.txt
 uavsar_pytools.egg-info/top_level.txt
+uavsar_pytools/convert/file_control.py
+uavsar_pytools/convert/tiff_conversion.py
+uavsar_pytools/download/download.py

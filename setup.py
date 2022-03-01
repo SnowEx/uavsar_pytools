@@ -22,8 +22,15 @@ VERSION = '0.1.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    'requests','asf_search', 'progressbar', 'tqdm', 'folium',
-    'geopandas', 'numpy', 'rasterio', 'matplotlib'
+    'requests',
+    'asf_search',
+    'progressbar',
+    'tqdm',
+    'folium',
+    'geopandas',
+    'numpy',
+    'rasterio',
+    'matplotlib'
 ]
 
 # What packages are optional?
@@ -104,7 +111,7 @@ setup(
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     url=URL,
-    packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
+    packages=find_packages(exclude=["tests/*"]),
     # If your package is a single module, use this instead of 'packages':
     # py_modules=['mypackage'],
 
