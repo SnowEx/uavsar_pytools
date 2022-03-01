@@ -1,0 +1,2 @@
+include title_figure.png
+recursive-include uavsar_pytools/ *.py

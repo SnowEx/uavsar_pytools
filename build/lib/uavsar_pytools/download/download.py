@@ -8,7 +8,7 @@ file is already downloaded and skip it. You will have to remove that file if you
 
 import requests
 import os
-from os.path import join, isdir, isfile, basename, dirname, exists
+from os.path import join, isdir, isfile, basename, dirname
 from tqdm.auto import tqdm
 import logging
 
@@ -137,7 +137,7 @@ def download_zip(url, output_dir):
 
     local = join(output_dir, basename(url))
 
-    if not exists(local):
+    if not isfile(local):
         stream_download(url, local)
     else:
         log.info(f'{local} already exists, skipping download!')
