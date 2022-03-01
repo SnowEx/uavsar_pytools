@@ -5,5 +5,3 @@
 .DS_Store
 .ipynb_checkpoints/
 *.pyc
-/piptests
-/build
