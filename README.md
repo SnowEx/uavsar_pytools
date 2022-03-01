@@ -12,7 +12,7 @@ This package is installable with pip. In the terminal enter the following comman
 pip install uavsar_pytools
 ```
 
-You will need a .netrc file in your home directory. This is a special file that stores passwords and usernames to be accessed by programs. If you are already registered at either the alaska satellite facility or jet propulsion laboratory and do not have a netrc file yet use: 
+You will need a .netrc file in your home directory. This is a special file that stores passwords and usernames to be accessed by programs. If you are already registered at either the alaska satellite facility or jet propulsion laboratory skip step 1. Otherwise: 
 
 1. If you need a username and password register at (link)[https://search.asf.alaska.edu/#/].
 
