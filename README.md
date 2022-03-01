@@ -22,7 +22,7 @@ from uavsar_pytools.uavsar_tools import create_netrc
 create_netrc()
 ```
 
-You will be asked to enter your username and password and a netrc file will be automatically generated for you.
+You will be asked to enter your username and password and a netrc file will be automatically generated for you. This file will be accessed during downloading and searching for Uavsar images.
 
 ## Usage
 
