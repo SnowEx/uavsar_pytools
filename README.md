@@ -17,10 +17,10 @@ You will need a .netrc file in your home directory. This is a special file that 
 1. If you need a username and password register at [link](https://search.asf.alaska.edu/).
 
 2. In a python terminal or notebook enter:
-'''python
+```python
 from uavsar_pytools.uavsar_tools import create_netrc
 create_netrc()
-'''
+```
 
 You will be asked to enter your username and password and a netrc file will be automatically generated for you.
 
