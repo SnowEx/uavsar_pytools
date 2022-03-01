@@ -6,7 +6,7 @@ Python tools to download and convert binary Uavsar images from the Alaska Satell
 
 ## Installing
 
-This package is installable with pip.
+This package is installable with pip. In the terminal enter the following command:
 
 ```console
 pip install uavsar_pytools
