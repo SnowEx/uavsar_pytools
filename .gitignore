@@ -4,3 +4,4 @@
 /test/data/imgs/*
 .DS_Store
 .ipynb_checkpoints/
+*.pyc

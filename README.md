@@ -6,29 +6,30 @@ Python tools to download and convert binary Uavsar images from the Alaska Satell
 
 ## Installing
 
-We are working to make this package pip installable. To run this repository locally using Jupyter Lab or Notebook:
-
-1. Navigate to where you want the files stored, and clone it to your local machine:
+This package is installable with pip. In the terminal enter the following command:
 
 ```console
- git clone https://github.com/SnowEx/uavsar_pytools.git
- ```
-
-2. Install the environment. The repository includes an environment.yml that contains a list of all the packages needed to run this tutorial. These lines will also activate your widget extension for the download progress bar. To install them using conda run:
-
-```console
-conda env create -f environment.yml
-conda activate uavsar_pytools
-jupyter nbextension enable --py widgetsnbextension
-python -m ipykernel install --user --name=uavsar_pytools
+pip install uavsar_pytools
 ```
 
-3. Start Jupyter:
+## Authorization
 
+<<<<<<< HEAD
 ```console
 jupyter notebook
+=======
+You will need a [.netrc file](https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html) in your home directory. This is a special file that stores passwords and usernames to be accessed by programs. If you are already registered at either the alaska satellite facility or jet propulsion laboratory skip step 1. Otherwise: 
+
+1. If you need a username and password register at [link](https://search.asf.alaska.edu/).
+
+2. In a python terminal or notebook enter:
+```python
+from uavsar_pytools.uavsar_tools import create_netrc
+create_netrc()
+>>>>>>> 757f8137633c21b0a59752059af0fa9bc0d7b8ae
 ```
 
+You will be asked to prompted to enter your username and password and a netrc file will be automatically generated for you. This file will be accessed during downloading and searching for Uavsar images.
 
 ## Usage
 
@@ -42,7 +43,9 @@ scene = UavsarScene(url = zip_url, work_dir= image_directory) #instantiating an 
 scene.url_to_tiffs()
 ```
 
-To get each image's numpy array the class has an `scene.images` property that contains the type, description, and numpy array for each image in the zip file. This is available after running `scene.url_to_tiffs()`.
+You will now have a folder of analysis ready tiff images in WGS84 from the provided url in your specificed work directory.
+
+If you are interested in working with each image's numpy array the class has an `scene.images` property that contains the type, description, and numpy array for each image in the zip file. This is available after running `scene.url_to_tiffs()`.
 
 ```python
 print(scene.image[0]['type'] # figure out the type of the first image
