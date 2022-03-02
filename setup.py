@@ -18,7 +18,7 @@ URL = 'https://github.com/SnowEx/uavsar_pytools'
 EMAIL = 'zachkeskinen@gmail.com'
 AUTHOR = 'Zach Keskinen and Jack Tarricone'
 REQUIRES_PYTHON = '>=3.7.0'
-VERSION = '0.1.3'
+VERSION = '0.1.6'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
@@ -30,7 +30,8 @@ REQUIRED = [
     'geopandas',
     'numpy',
     'rasterio',
-    'matplotlib'
+    'matplotlib',
+    'getpass'
 ]
 
 # What packages are optional?

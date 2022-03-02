@@ -37,7 +37,7 @@ class UavsarScene():
 
     def __init__(self, url, work_dir, debug = False):
         self.url = url
-        self.work_dir = work_dir
+        self.work_dir = os.path.expanduser(work_dir)
         self.debug = debug
 
 
@@ -48,7 +48,8 @@ class UavsarScene():
             download_dir (str): directory to download image to. Will be created if it doesn't exists.
             ann (bool): download associated annotation file? [default = True]
         """
-        out_dir = os.path.join(self.work_dir,sub_dir)
+        out_dir = os.path.join(self.work_dir, sub_dir)
+
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
 

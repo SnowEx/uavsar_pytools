@@ -4,6 +4,7 @@ Group of Uavsar functions that are wrapped in classes for seperated use.
 
 import os
 from os.path import exists, expanduser, join
+from getpass import getpass
 import logging
 
 from uavsar_pytools.download.download import download_image, download_zip, stream_download
@@ -16,7 +17,7 @@ log.setLevel(logging.DEBUG)
 
 def create_netrc():
     username = input('Enter ASF or JPL username: ')
-    password = input('Enter ASF or JPL password: ')
+    password = getpass('Enter ASF or JPL password: ')
     home = expanduser("~")
     local = join(home, '.netrc')
     lines = ['machine urs.earthdata.nasa.gov', f'login {username}', f'password {password}']

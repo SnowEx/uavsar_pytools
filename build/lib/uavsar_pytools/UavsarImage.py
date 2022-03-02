@@ -33,7 +33,7 @@ class UavsarImage():
 
     def __init__(self, url, work_dir, debug = False):
         self.url = url
-        self.work_dir = work_dir
+        self.work_dir = os.path.expanduser(work_dir)
         self.debug = debug
 
     def download(self, sub_dir = 'bin_imgs/', ann = True):
