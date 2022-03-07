@@ -36,7 +36,12 @@ def stream_download(url, output_f):
                         f.write(ch)
                         pbar.update(len(ch))
     else:
-        log.warning(f'HTTP CODE {r.status_code}. Skipping download!')
+        if r.status_code == 401:
+            log.warning(f'HTTP CODE 401. Downloading requires a .netrc in your home directory. See ReadMe for instructions on a uavsar_pytools function to create this file.')
+        elif r.status_code == 404:
+            log.warning(f'HTTP CODE 404. Url not found. Currently trying {url}.')
+        else:
+            log.warning(f'HTTP CODE {r.status_code}. Skipping download!')
 
 
 def download_image(url, output_dir, ann = False):
