@@ -7,4 +7,3 @@ geopandas
 numpy
 rasterio
 matplotlib
-getpass
