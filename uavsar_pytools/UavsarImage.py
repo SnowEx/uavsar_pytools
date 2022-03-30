@@ -17,6 +17,7 @@ class UavsarImage():
         work_dir (str) = directory to download images into
         overwrite (bool) = Do you want to overwrite pre-existing files [Default = False]
         debug (str) = level of logging (not yet implemented)
+        ann_url (str) = optional parameter to manually provide annotation url associated with the file.
 
     Attributes:
         binary_fp (str): filepath of downloaded images. Created automatically after downloading.
@@ -31,7 +32,7 @@ class UavsarImage():
     desc = None
     type = None
 
-    def __init__(self, url, work_dir, debug = False):
+    def __init__(self, url, work_dir, ann_url = None, debug = False):
         self.url = url
         self.work_dir = os.path.expanduser(work_dir)
         self.debug = debug
