@@ -18,7 +18,7 @@ URL = 'https://github.com/SnowEx/uavsar_pytools'
 EMAIL = 'zachkeskinen@gmail.com'
 AUTHOR = 'Zach Keskinen and Jack Tarricone'
 REQUIRES_PYTHON = '>=3.7.0'
-VERSION = '0.1.7'
+VERSION = '0.2.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
