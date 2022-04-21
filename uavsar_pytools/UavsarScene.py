@@ -113,6 +113,8 @@ class UavsarScene():
         for f in binary_img_fps:
             f_pol = [pol for pol in pols if pol in basename(f)][0]
             ann_fp = ann_dic[f_pol]
+            if not ann_fp:
+                ann_fp = ann_fps[0]
             desc, array, type = grd_tiff_convert(f, out_dir, ann_fp = ann_fp, overwrite = True)
             self.images.append({'description': desc, 'array':  array, 'type': type})
 
