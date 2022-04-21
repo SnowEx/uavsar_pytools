@@ -14,7 +14,7 @@ pip install uavsar_pytools
 
 ## Authorization
 
-You will need a [.netrc file](https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html) in your home directory. This is a special file that stores passwords and usernames to be accessed by programs. If you are already registered at either the alaska satellite facility or jet propulsion laboratory skip step 1. Otherwise: 
+You will need a [.netrc file](https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html) in your home directory. This is a special file that stores passwords and usernames to be accessed by programs. If you are already registered at either the alaska satellite facility or jet propulsion laboratory skip step 1. Otherwise:
 
 1. If you need a username and password register at [link](https://search.asf.alaska.edu/).
 
@@ -32,8 +32,12 @@ The fundamental class of uavsar_pytools is the `UavsarScene`. This class is used
 
 ```python
 from uavsar_pytools.UavsarScene import UavsarScene
-zip_url = 'https://datapool.asf.alaska.edu/INTERFEROMETRY_GRD/UA/INTERFEROGRAM_OR_POLSAR_GRD.zip'
+## EXAMPLE URL TO PRACTICE! CHANGE TO YOUR PREFERRED URL FROM ASF VERTED ##
+zip_url = 'https://datapool.asf.alaska.edu/INTERFEROMETRY_GRD/UA/lowman_05208_21019-019_21021-007_0006d_s01_L090_01_int_grd.zip'
+
+## CHANGE THE LINE BELOW THIS TO A DIRECTORY YOU WANT TO DOWNLOAD! ##
 image_directory = '~/directory/to/store/images/'
+
 scene = UavsarScene(url = zip_url, work_dir= image_directory) #instantiating an instance of the UavsarScene class.
 scene.url_to_tiffs()
 ```
