@@ -104,15 +104,21 @@ class UavsarScene():
             ann_fps = [a for a in binary_fps if '.ann' in a]
             ann_dic = {}
             for pol in pols:
-                ann_dic[pol] = [fp for fp in ann_fps if pol in fp][0]
+                ann_pol = [fp for fp in ann_fps if pol in fp]
+                if ann_pol:
+                    ann_dic[pol] = ann_pol[0]
+
             if not ann_fps:
                 log.warning('No annotation file found for binary files.')
 
         binary_img_fps = [f for f in binary_fps if '.ann' not in f]
 
         for f in binary_img_fps:
-            f_pol = [pol for pol in pols if pol in basename(f)][0]
-            ann_fp = ann_dic[f_pol]
+            if len(ann_dic) > 0:
+                f_pol = [pol for pol in pols if pol in basename(f)][0]
+                ann_fp = ann_dic[f_pol]
+            if not ann_fp:
+                ann_fp = ann_fps[0]
             desc, array, type = grd_tiff_convert(f, out_dir, ann_fp = ann_fp, overwrite = True)
             self.images.append({'description': desc, 'array':  array, 'type': type})
 
