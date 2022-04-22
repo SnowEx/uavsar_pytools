@@ -32,10 +32,10 @@ The fundamental class of uavsar_pytools is the `UavsarScene`. This class is used
 
 ```python
 from uavsar_pytools.UavsarScene import UavsarScene
-## EXAMPLE URL TO PRACTICE! CHANGE TO YOUR PREFERRED URL FROM ASF VERTED ##
+## Example url. Use vertex to find other urls: https://search.asf.alaska.edu/ ##
 zip_url = 'https://datapool.asf.alaska.edu/INTERFEROMETRY_GRD/UA/lowman_05208_21019-019_21021-007_0006d_s01_L090_01_int_grd.zip'
 
-## CHANGE THE LINE BELOW THIS TO A DIRECTORY YOU WANT TO DOWNLOAD! ##
+## Change this variable to a directory you want to download to ##
 image_directory = '~/directory/to/store/images/'
 
 scene = UavsarScene(url = zip_url, work_dir= image_directory) #instantiating an instance of the UavsarScene class.
