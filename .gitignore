@@ -7,3 +7,6 @@
 *.pyc
 pipCommands
 test.ipynb
+*.egg-info/
+build/*
+dist/*
