@@ -3,7 +3,7 @@ import logging
 import asf_search as asf
 import pandas as pd
 
-from uavsar_pytools.UavsarScene import UavsarScene
+from uavsar_pytools.uavsar_scene import UavsarScene
 
 log = logging.getLogger(__name__)
 logging.basicConfig()

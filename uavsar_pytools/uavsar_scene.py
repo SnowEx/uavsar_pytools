@@ -9,7 +9,7 @@ import shutil
 from uavsar_pytools.download.download import download_zip
 from uavsar_pytools.convert.file_control import unzip
 from uavsar_pytools.convert.tiff_conversion import grd_tiff_convert
-from uavsar_pytools.UavsarImage import UavsarImage
+from uavsar_pytools.uavsar_image import UavsarImage
 
 log = logging.getLogger(__name__)
 logging.basicConfig()
