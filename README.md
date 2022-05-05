@@ -54,6 +54,19 @@ scene.images[0]['array'] # get the first image numpy array for analysis
 
 For quick checks to visualize the data there is also a convenience method `scene.show(i = 1)` that allows you to quickly visualize the first image, or by iterating on i = 2,3,4, etc all the images in the zip file. This method is only available after converting binary images to array with `scene.url_to_tiffs()`.
 
+## Downloading whole collections
+
+Uavsar_pytools can now take a collection name and a start and end date and find, download, and process an entire collection of uavsar images. Collection names can be found at [campaign list](https://api.daac.asf.alaska.edu/services/utils/mission_list). Once you know your campaign name and the date range you can give the package a working directory along with the name and dates and it will do the rest. For example if you want to download all uavsar images for Grand Mesa, Colorado from November 2019 to April 2020 and wanted to save it to your documents folder you would use:
+
+```python
+from uavsar_pytools import UavsarCollection
+collection = UavsarCollection(collection = 'Grand Mesa, CO', work_dir = '~/Documents/collection_ex/', dates = ('2019-11-01',2020-04-01'))
+# to keep binary files use `clean = False`, to download incidence angles with each image use `inc = True`, for only certain pols use `pols = ['VV','HV']`
+collection.collection_to_tiffs()
+```
+
+Each image pair found will be placed in its own directory with its Alaska Satellite Facility derived name as the directory name. Unlike for UavsarScene this functionality will automatically delete the downloaded binary and zip files after converting them to tiffs to save space.
+
 ## Finding URLs for your images
 
 The provided jupyter notebook tutorial in the notebooks folder will walk you through generating a bounding box for your area of interest and finding urls through the [asf_search api](https://github.com/asfadmin/Discovery-asf_search). However if you can also use the [vertex website](https://search.asf.alaska.edu/). After drawing a box and selecting UAVSAR from the platform selection pane (circled in red below) you will get a list of search results. Click on the ground projected image you want to download and right click on the download link (circled in orange below). Select ```copy link``` and you will have copied your relevant zip url.
