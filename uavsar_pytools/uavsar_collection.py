@@ -81,7 +81,7 @@ class UavsarCollection():
                 inc_res = asf.search(platform = 'UAVSAR',
                         processingLevel = (['INC']),
                         campaign = self.collection,
-                        frame= int(prop['frameNumber']),
+                        # frame= int(prop['frameNumber']),
                         relativeOrbit= int(prop['pathNumber']),
                         start= prop['startTime'],
                         end = prop['stopTime'])[0]
