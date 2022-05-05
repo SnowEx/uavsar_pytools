@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import shutil
 import logging
 
 from uavsar_pytools.download.download import download_image
@@ -18,6 +19,7 @@ class UavsarImage():
         overwrite (bool) = Do you want to overwrite pre-existing files [Default = False]
         debug (str) = level of logging (not yet implemented)
         ann_url (str) = optional parameter to manually provide annotation url associated with the file.
+        clean (bool) = erase binary image  and annotation files? [Default = False]
 
     Attributes:
         binary_fp (str): filepath of downloaded images. Created automatically after downloading.
@@ -25,17 +27,18 @@ class UavsarImage():
         arr (array) = processed numpy array of the image
         desc (dict) = description of image from annotation file.
     """
-    binary_fp = None
-    ann_fp = None
-    tiff_dir = None
-    arr = None
-    desc = None
-    type = None
 
-    def __init__(self, url, work_dir, ann_url = None, debug = False):
+    def __init__(self, url, work_dir, ann_url = None, debug = False, clean = False):
         self.url = url
         self.work_dir = os.path.expanduser(work_dir)
         self.debug = debug
+        self.binary_fp = None
+        self.clean = clean
+        self.ann_fp = None
+        self.tiff_dir = None
+        self.arr = None
+        self.desc = None
+        self.type = None
 
     def download(self, sub_dir = 'bin_imgs/', ann = True):
         """
@@ -45,6 +48,7 @@ class UavsarImage():
             ann (bool): download associated annotation file? [default = True]
         """
         out_dir = os.path.join(self.work_dir,sub_dir)
+        self.bin_dir = out_dir
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
         self.binary_fp, self.ann_fp = download_image(self.url, output_dir= out_dir, ann = ann)
@@ -76,6 +80,9 @@ class UavsarImage():
         result = grd_tiff_convert(in_fp = binary_fp, out_dir = out_dir, ann_fp = ann_fp, overwrite = overwrite)
         if len(result) == 3:
             self.desc, self.arr, self.type = result
+
+        if self.clean:
+            shutil.rmtree(self.bin_dir)
 
     def show(self):
         """Convenience function to check converted array."""

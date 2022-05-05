@@ -6,3 +6,8 @@
 .ipynb_checkpoints/
 *.pyc
 pipCommands
+test.ipynb
+uavsar_pytools.egg-info/
+build/*
+dist/*
+uavsar_pytools.egg-info/

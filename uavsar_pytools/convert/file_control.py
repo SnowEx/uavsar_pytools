@@ -4,9 +4,15 @@ File control functions for uavsar_pytools.
 
 from zipfile import ZipFile
 from tqdm import tqdm
+import os
 from os.path import exists, join
 
-def unzip(dir_path, out_dir):
+import logging
+log = logging.getLogger(__name__)
+logging.basicConfig()
+log.setLevel(logging.DEBUG)
+
+def unzip(dir_path, out_dir, pols = None):
     """
     Function to extract zipped directory with tqdm progress bar.
     From: https://stackoverflow.com/questions/4006970/monitor-zip-file-extraction-python.
@@ -20,11 +26,20 @@ def unzip(dir_path, out_dir):
     # Open your .zip file
     with ZipFile(file=dir_path) as zip_file:
 
-        checked_list = [f for f in zip_file.namelist() if not exists(join(out_dir, f))]
+        if pols:
+            pol_list = [s for s in zip_file.namelist() if any(xs in s for xs in pols)]
+            checked_list = [f for f in pol_list if not exists(join(out_dir, f))]
+        else:
+            pol_list = zip_file.namelist()
+            checked_list = [f for f in pol_list if not exists(join(out_dir, f))]
+
+
         # Loop over each file
         if checked_list:
-            for file in tqdm(iterable=checked_list, total=len(zip_file.namelist()), unit = 'file', desc='Unzipping'):
+            for file in tqdm(iterable=checked_list, total=len(checked_list), unit = 'file', desc='Unzipping'):
                 # Extract each file to another directory
                 zip_file.extract(member=file, path=out_dir)
+        else:
+            log.info('No files found to unzip. Check if polarizations exist.')
 
-    return [join(out_dir, fp) for fp in zip_file.namelist()]
+    return [join(out_dir, fp) for fp in pol_list]
