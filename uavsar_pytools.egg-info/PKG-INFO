@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: uavsar-pytools
-Version: 0.4.8
+Version: 0.4.9
 Summary: Tools to download and convert ground projected UAVSAR images.
 Home-page: https://github.com/SnowEx/uavsar_pytools
 Author: Zach Keskinen and Jack Tarricone
@@ -35,7 +35,7 @@ pip install uavsar_pytools
 
 You will need a [.netrc file](https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html) in your home directory. This is a special file that stores passwords and usernames to be accessed by programs. If you are already registered at either the alaska satellite facility or jet propulsion laboratory skip step 1. Otherwise:
 
-1. If you need a username and password register at [link](https://search.asf.alaska.edu/). Please ensure you have signed the end user agreement for Uavsar.
+1. If you need a username and password register at [link](https://search.asf.alaska.edu/). Please ensure you have signed the end user agreement for Uavsar. You may need to attempt to download a uavsar image from vertex to prompt the end user agreement.
 
 2. In a python terminal or notebook enter:
 ```python
@@ -72,6 +72,19 @@ scene.images[0]['array'] # get the first image numpy array for analysis
 ```
 
 For quick checks to visualize the data there is also a convenience method `scene.show(i = 1)` that allows you to quickly visualize the first image, or by iterating on i = 2,3,4, etc all the images in the zip file. This method is only available after converting binary images to array with `scene.url_to_tiffs()`.
+
+## Downloading whole collections
+
+Uavsar_pytools can now take a collection name and a start and end date and find, download, and process an entire collection of uavsar images. Collection names can be found at [campaign list](https://api.daac.asf.alaska.edu/services/utils/mission_list). Once you know your campaign name and the date range you can give the package a working directory along with the name and dates and it will do the rest. For example if you want to download all uavsar images for Grand Mesa, Colorado from November 2019 to April 2020 and wanted to save it to your documents folder you would use:
+
+```python
+from uavsar_pytools import UavsarCollection
+collection = UavsarCollection(collection = 'Grand Mesa, CO', work_dir = '~/Documents/collection_ex/', dates = ('2019-11-01','2020-04-01'))
+# to keep binary files use `clean = False`, to download incidence angles with each image use `inc = True`, for only certain pols use `pols = ['VV','HV']`
+collection.collection_to_tiffs()
+```
+
+Each image pair found will be placed in its own directory with its Alaska Satellite Facility derived name as the directory name. Unlike for UavsarScene this functionality will automatically delete the downloaded binary and zip files after converting them to tiffs to save space.
 
 ## Finding URLs for your images
 
