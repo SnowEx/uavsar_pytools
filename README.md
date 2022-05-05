@@ -16,7 +16,7 @@ pip install uavsar_pytools
 
 You will need a [.netrc file](https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html) in your home directory. This is a special file that stores passwords and usernames to be accessed by programs. If you are already registered at either the alaska satellite facility or jet propulsion laboratory skip step 1. Otherwise:
 
-1. If you need a username and password register at [link](https://search.asf.alaska.edu/). Please ensure you have signed the end user agreement for Uavsar.
+1. If you need a username and password register at [link](https://search.asf.alaska.edu/). Please ensure you have signed the end user agreement for Uavsar. You may need to attempt to download a uavsar image from vertex to prompt the end user agreement.
 
 2. In a python terminal or notebook enter:
 ```python
