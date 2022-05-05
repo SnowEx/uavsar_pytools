@@ -37,7 +37,7 @@ def stream_download(url, output_f):
                         pbar.update(len(ch))
     else:
         if r.status_code == 401:
-            log.warning(f'HTTP CODE 401. DOWNLOADING REQUIRES A NETRC FILE AND SIGNED UAVSAR END USER AGREEMENT!ß See ReadMe for instructions.')
+            log.warning(f'HTTP CODE 401. DOWNLOADING REQUIRES A NETRC FILE AND SIGNED UAVSAR END USER AGREEMENT! See ReadMe for instructions.')
         elif r.status_code == 404:
             log.warning(f'HTTP CODE 404. Url not found. Currently trying {url}.')
         else:
