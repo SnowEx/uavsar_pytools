@@ -60,7 +60,7 @@ Uavsar_pytools can now take a collection name and a start and end date and find,
 
 ```python
 from uavsar_pytools import UavsarCollection
-collection = UavsarCollection(collection = 'Grand Mesa, CO', work_dir = '~/Documents/collection_ex/', dates = ('2019-11-01',2020-04-01'))
+collection = UavsarCollection(collection = 'Grand Mesa, CO', work_dir = '~/Documents/collection_ex/', dates = ('2019-11-01','2020-04-01'))
 # to keep binary files use `clean = False`, to download incidence angles with each image use `inc = True`, for only certain pols use `pols = ['VV','HV']`
 collection.collection_to_tiffs()
 ```
