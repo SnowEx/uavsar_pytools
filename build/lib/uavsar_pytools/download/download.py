@@ -36,10 +36,15 @@ def stream_download(url, output_f):
                         f.write(ch)
                         pbar.update(len(ch))
     else:
-        log.warning(f'HTTP CODE {r.status_code}. Skipping download!')
+        if r.status_code == 401:
+            log.warning(f'HTTP CODE 401. DOWNLOADING REQUIRES A NETRC FILE AND SIGNED UAVSAR END USER AGREEMENT!ß See ReadMe for instructions.')
+        elif r.status_code == 404:
+            log.warning(f'HTTP CODE 404. Url not found. Currently trying {url}.')
+        else:
+            log.warning(f'HTTP CODE {r.status_code}. Skipping download!')
 
 
-def download_image(url, output_dir, ann = False):
+def download_image(url, output_dir, ann = False, ann_url = None):
     """
     Downloads uavsar InSAR files from a url.
     Args:
@@ -64,56 +69,63 @@ def download_image(url, output_dir, ann = False):
         log.info(f'{local} already exists, skipping download!')
 
     if ann:
-        ann_url = None
-        if url.split('.')[-1] == 'zip' or url.split('.')[-1] == 'ann':
-            log.info('Download already contains ann file, skipping download!')
-        else:
-            # see if we can use the parent directory to extract the annotation file
-            parent = dirname(url)
-            # ASF formatting - query parent directory
-            if parent.split('.')[-1] == 'zip':
-                log.debug(f'ASF url found for {url}')
-                parent_files = requests.get(parent).json()['response']
-                ann_info = [i for i in parent_files if '.ann' in i['name']][0]
-                # assert len(ann_info) == 1, 'More than one ann file detected'
-                ann_url = ann_info['url']
-                log.debug(f'Annotation url: {ann_url}')
-
-            # Can't find zip parent directory - have to parse url to get ann
+        if ann_url == None:
+            if url.split('.')[-1] == 'zip' or url.split('.')[-1] == 'ann':
+                log.info('Download already contains ann file, skipping download!')
             else:
-                log.debug(f'Can not find zip parent directory.')
-                ext = url.split('.')[-1]
-                pols = ['VVVV','HHHH','HVHV', 'HHHV', 'HHVV','HVVV']
-                slc_pol = [pol for pol in pols if (pol in url)]
-                if len(slc_pol) == 1:
-                    url = url.replace(slc_pol[0], '')
+                # see if we can use the parent directory to extract the annotation file
+                parent = dirname(url)
+                # ASF formatting - query parent directory
+                if parent.split('.')[-1] == 'zip':
+                    log.debug(f'ASF url found for {url}')
+                    parent_files = requests.get(parent).json()['response']
+                    ann_info = [i for i in parent_files if '.ann' in i['name']][0]
+                    # assert len(ann_info) == 1, 'More than one ann file detected'
+                    ann_url = ann_info['url']
+                    log.debug(f'Annotation url: {ann_url}')
 
-                if ext == 'grd':
-                    if len(basename(url).split('.')) == 2:
-                        url = url.replace('.grd','.ann')
-                    if len(basename(url).split('.')) == 3:
-                        url = url.replace('.grd','')
+                # Can't find zip parent directory - have to parse url to get ann
+                else:
+                    log.debug(f'Can not find zip parent directory.')
                     ext = url.split('.')[-1]
-                ann_url = url.replace(f'.{ext}', '.ann')
-                log.debug(f'Parsed annotation url: {ann_url}')
+                    pols = ['VVVV','HHHH','HVHV', 'HHHV', 'HHVV','HVVV']
+                    slc_pol = [pol for pol in pols if (pol in url)]
+                    if len(slc_pol) == 1:
+                        url = url.replace(slc_pol[0], '')
 
-                response = requests.get(ann_url)
-                if response.status_code == 200:
-                    log.debug('Success in parsing ann url')
+                    if ext == 'grd':
+                        if len(basename(url).split('.')) == 2:
+                            url = url.replace('.grd','.ann')
+                        if len(basename(url).split('.')) == 3:
+                            url = url.replace('.grd','')
+                        ext = url.split('.')[-1]
+                    elif ext == 'inc' and 'asf' in url:
+                        url = url.replace('INC','METADATA')
+                    ann_url = url.replace(f'.{ext}', '.ann')
+                    log.debug(f'Parsed annotation url: {ann_url}')
+
+                    response = requests.get(ann_url)
+                    if response.status_code == 200:
+                        log.debug('Success in parsing ann url')
+
+                    else:
+                        ann_url = None
+
+                if ann_url:
+                    ann_local = join(output_dir, basename(ann_url))
+                    log.debug(f'Annotation local: {ann_local} and url {ann_url}')
+                    if not isfile(ann_local):
+                        stream_download(ann_url, ann_local)
+                    else:
+                        log.info(f'{ann_local} already exists, skipping download!')
+                    return local, ann_local
                 else:
+                    log.warning('No ann url found. Manually provide .ann url.')
                     ann_url = None
-
-            if ann_url:
-                ann_local = join(output_dir, basename(ann_url))
-                log.debug(f'Annotation local: {ann_local} and url {ann_url}')
-                if not isfile(ann_local):
-                    stream_download(ann_url, ann_local)
-                else:
-                    log.info(f'{ann_local} already exists, skipping download!')
-                return local, ann_local
-            else:
-                log.warning('No ann url found. Manually provide .ann url.')
-                ann_url = None
+        else:
+            ann_local = join(output_dir, basename(ann_url))
+            if not isfile(ann_local):
+                stream_download(ann_url, ann_local)
 
         return local, None
 
