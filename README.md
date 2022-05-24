@@ -1,4 +1,5 @@
 [![DOI](https://zenodo.org/badge/452858293.svg)](https://zenodo.org/badge/latestdoi/452858293)
+![version](https://img.shields.io/badge/version-0.5.0-blue)
 
 # uavsar_pytools
 
