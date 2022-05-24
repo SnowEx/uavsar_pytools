@@ -8,7 +8,6 @@
 pipCommands
 test.ipynb
 uavsar_pytools.egg-info/
-build/*
 dist/*
 uavsar_pytools.egg-info/
 
@@ -18,7 +17,6 @@ bin/
 develop-eggs/
 dist/
 eggs/
-lib/
 lib64/
 parts/
 sdist/
