@@ -14,7 +14,7 @@ uavsar_pytools.egg-info/
 
 # Distribution / packaging
 bin/
-build/
+
 develop-eggs/
 dist/
 eggs/
