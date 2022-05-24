@@ -51,8 +51,8 @@ class UavsarCollection():
         self.dates = dates
         if dates:
             # define search parameters for sierra flight line
-            self.start_date = dates[0]
-            self.end_date = dates[1]
+            self.start_date = pd.to_datetime(dates[0])
+            self.end_date = pd.to_datetime(dates[1])
 
     def find_urls(self):
         # search for data
