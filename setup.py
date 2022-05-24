@@ -120,6 +120,8 @@ setup(
     # },
     install_requires=REQUIRED,
     # extras_require=EXTRAS,
+    test_suite='nose.collector',
+    tests_require=['nose'],
     include_package_data=True,
     license='MIT',
     classifiers=[
