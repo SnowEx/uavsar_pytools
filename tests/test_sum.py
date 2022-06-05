@@ -1,6 +1,5 @@
 import unittest
 
-
 class TestSum(unittest.TestCase):
 
     def test_sum(self):
