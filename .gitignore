@@ -1,4 +1,5 @@
 /data
+/.vscode
 *.tif
 *.grd
 /test/data/imgs/*
@@ -24,3 +25,4 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+/play
