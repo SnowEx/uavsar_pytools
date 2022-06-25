@@ -136,6 +136,7 @@ H_A_alpha_decomp(in_dir, out_dir)
 ```
 
 Note that this function involves thousands of eigenvalue calculations and may be quite slow (~?? hours on a i7 @ 2.70 GHz for any image with ~74 million valid pixels). Considering putting the above into a python script instead of calling this from a jupyter notebook.
+If you kernel dies due to memory overload use the `tiles = x` with x replaced with the number of tiles to tile the processing.
 
 ## Need more help?
 

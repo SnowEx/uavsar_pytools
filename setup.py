@@ -31,14 +31,13 @@ REQUIRED = [
     'geopandas',
     'numpy',
     'rasterio',
-    'matplotlib',
-    'GDAL'
+    'matplotlib'
 ]
 
 
 # What packages are optional?
 EXTRAS = {
-    'nb_conda_kernels', 'ipykernel', 'ipywidgets', 'jupyter', 'GDAL', ''
+    'nb_conda_kernels', 'ipykernel', 'ipywidgets', 'jupyter', 'GDAL'
 }
 
 # The rest you shouldn't have to touch too much :)

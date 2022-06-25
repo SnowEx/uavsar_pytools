@@ -1,5 +1,4 @@
 """
-Originally written by Micah J. Amended for uavsar_pytools by Zach Keskinen.
 Functions convert polsar, insar, and other associated UAVSAR files from binary format to geoTIFFS in WGS84.
 """
 
@@ -23,6 +22,7 @@ log.setLevel(logging.WARNING)
 def get_encapsulated(str_line, encapsulator):
     """
     Returns items found in the encapsulator, useful for finding units
+    Originally written by Micah J. Amended for uavsar_pytools by Zach Keskinen.
     Args:
         str_line: String that has encapusulated info we want removed
         encapsulator: string of characters encapusulating info to be removed
@@ -61,6 +61,8 @@ def read_annotation(ann_file):
     """
     .ann files describe the INSAR data. Use this function to read all that
     information in and return it as a dictionary
+    Originally written by Micah J. Amended for uavsar_pytools by Zach Keskinen.
+
     Expected format:
     `DEM Original Pixel spacing (arcsec) = 1`
     Where this is interpretted as:
@@ -136,6 +138,7 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user'):
     See: https://uavsar.jpl.nasa.gov/science/documents/polsar-format.html for polsar
     and: https://uavsar.jpl.nasa.gov/science/documents/rpi-format.html for insar
     and: https://uavsar.jpl.nasa.gov/science/documents/stack-format.html for SLC stacks.
+    Originally written by Micah J. Amended for uavsar_pytools by Zach Keskinen.
 
     Args:
         in_fp (string): path to input binary file
