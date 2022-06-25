@@ -34,13 +34,13 @@ The fundamental class of uavsar_pytools is the `UavsarScene`. This class is used
 
 ```python
 from uavsar_pytools import UavsarScene
-## Example url. Use vertex to find other urls: https://search.asf.alaska.edu/ ##
+## Example url. Use vertex to find other urls: https://search.asf.alaska.edu/
 zip_url = 'https://datapool.asf.alaska.edu/INTERFEROMETRY_GRD/UA/lowman_05208_21019-019_21021-007_0006d_s01_L090_01_int_grd.zip'
 
-## Change this variable to a directory you want to download to ##
+## Change this variable to a directory you want to download files into
 image_directory = '~/directory/to/store/images/'
 
-#instantiating an instance of the UavsarScene class.
+# Instantiating an instance of the UavsarScene class and downloading all images
 scene = UavsarScene(url = zip_url, work_dir= image_directory)
 scene.url_to_tiffs()
 ```
@@ -66,14 +66,18 @@ from uavsar_pytools import UavsarCollection
 ## Collection name from the campaign list
 col_name = 'Grand Mesa, CO'
 
-## Working directory to save files into:
+## Working directory to save files into
 work_d = '~/Documents/collection_ex/'
 
 ## Optional dates to check between
 dates = ('2019-11-01','2020-04-01')
 
 collection = UavsarCollection(collection = col_name, work_dir = work_d, dates = dates)
-# to keep binary files use `clean = False`, to download incidence angles with each image use `inc = True`, for only certain pols use `pols = ['VV','HV']`
+
+# Optional keywords: to keep binary files use `clean = False`, to download incidence angles 
+# with each image use `inc = True`, for only certain pols use `pols = ['VV','HV']`.
+# See docstring of class for full list.
+
 collection.collection_to_tiffs()
 ```
 
@@ -131,7 +135,7 @@ out_dir = '/path/to/directory/to/output/H_A_Alpha_entropy
 H_A_alpha_decomp(in_dir, out_dir)
 ```
 
-Note that this function involves thousands of eigenvalue calculations and may be quite slow. Considering putting the above into a python script instead of calling this from a jupyter notebook.
+Note that this function involves thousands of eigenvalue calculations and may be quite slow (~?? hours on a i7 @ 2.70 GHz for any image with ~74 million valid pixels). Considering putting the above into a python script instead of calling this from a jupyter notebook.
 
 ## Need more help?
 
