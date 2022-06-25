@@ -112,7 +112,8 @@ Polarimetric analysis of SAR images quantifies the scattering properties of obje
 ```
 from uavsar.polsar import H_A_alpha_decomp
 
-# This should point to the directory with all 6 polarization (VVVV, HVHV, HVVV, HHHV, HHVV, HHHH) and the correct .ann file.
+# This should point to the directory with all 6 polarization
+# (VVVV, HVHV, HVVV, HHHV, HHVV, HHHH) and the correct .ann file.
 in_dir = '/path/to/directory/full/of/polsar.grd
 
 # Will output 4 files to this directory of H, A, alpha1, and mean alpha.
