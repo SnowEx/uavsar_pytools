@@ -35,12 +35,6 @@ class UavsarScene():
         desc (dict): description of image from annotation file.
     """
 
-    zipped_fp = None
-    ann_fp = None
-    binary_fps = []
-    images = []
-    tmp_dir = None
-
     def __init__(self, url, work_dir, clean = False, debug = False, pols = None, low_ram = False):
         self.url = url
         self.pair_name = basename(url).split('.')[0]
@@ -48,6 +42,11 @@ class UavsarScene():
         self.clean = clean
         self.debug = debug
         self.low_ram = low_ram
+        self.zipped_fp = None
+        self.ann_fp = None
+        self.binary_fps = []
+        self.images = []
+        self.tmp_dir = None
         if pols:
             pols = [pol.upper() for pol in pols]
             if set(pols).issubset(['VV','VH','HV','HH']):

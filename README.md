@@ -18,7 +18,7 @@ pip install uavsar_pytools
 
 You will need a [.netrc file](https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html) in your home directory. This is a special file that stores passwords and usernames to be accessed by programs. If you are already registered at either the alaska satellite facility or jet propulsion laboratory skip step 1. Otherwise:
 
-1. If you need a username and password register at [link](https://search.asf.alaska.edu/). Please ensure you have signed the end user agreement for Uavsar. You may need to attempt to download a uavsar image from vertex to prompt the end user agreement.
+1. If you need a username and password register at [link](https://urs.earthdata.nasa.gov/). Please ensure you have signed the end user agreement for Uavsar. You may need to attempt to download a uavsar image from vertex to prompt the end user agreement.
 
 2. In a python terminal or notebook enter:
 ```python
@@ -116,8 +116,10 @@ dem = numpy array or .tif file path of dem resampled to match uavsar.
 lkv_x = numpy array or .tif file path of x component of look vector file (.lkv)
 lkv_y = numpy array or .tif file path of y component of look vector file (.lkv)
 lkv_z = numpy array or .tif file path of z component of look vector file (.lkv)
-calc_inc_angle(dem, lkv_x, lkv_y, lkv_z)
+inc_array = calc_inc_angle(dem, lkv_x, lkv_y, lkv_z)
 ```
+
+This will return an incidence angle array that you can then save out to disk or test.
 
 ## Polarimetric Analysis
 
@@ -132,11 +134,10 @@ in_dir = '/path/to/directory/full/of/polsar.grd
 
 # Will output 4 files to this directory of H, A, alpha1, and mean alpha.
 out_dir = '/path/to/directory/to/output/H_A_Alpha_entropy
-H_A_alpha_decomp(in_dir, out_dir)
+H_A_alpha_decomp(in_dir, out_dir) # use parralel = True to use dask parralelization.
 ```
 
-Note that this function involves thousands of eigenvalue calculations and may be quite slow (~?? hours on a i7 @ 2.70 GHz for any image with ~74 million valid pixels). Considering putting the above into a python script instead of calling this from a jupyter notebook.
-If you kernel dies due to memory overload use the `tiles = x` with x replaced with the number of tiles to tile the processing.
+Note that this function involves thousands of eigenvalue calculations and may be quite slow (~4 hours on a i7 @ 2.50 GHz for any image with ~74 million valid pixels). Considering putting the above into a python script instead of calling this from a jupyter notebook. This is also a memory intensive operation and has been parralelized on dask. Use `parralel = True` keyword to use dask.
 
 ## Need more help?
 
