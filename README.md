@@ -79,7 +79,7 @@ The provided jupyter notebook tutorial in the notebooks folder will walk you thr
 
 Note that this will require the extra packages (GDAL) specified in the setup.py. If you need this functionality please pip install using: `pip install uavsar_pytools[extra]`.
 
-Single look complex (SLC) images and other Uavsar images without a .grd extension may be in [radar slant range](https://earth.esa.int/eogateway/missions/ers/radar-courses/radar-course-2#:~:text=The%20distance%20between%20any%20point,ground%20directly%20underneath%20the%20radar). This means that in order to view the image in the image in it's correct location you will need to project it to a coordinate system. The `geolocate_uavsar` function takes an array of lat, long, and heights called a .llh file and projects a uavsar image from radar to ground range. The .llh file is provided with slant range images in both the asf and jpl websites.
+Single look complex (SLC) uavsar images and other Uavsar images without a .grd extension may be in [radar slant range](https://earth.esa.int/eogateway/missions/ers/radar-courses/radar-course-2#:~:text=The%20distance%20between%20any%20point,ground%20directly%20underneath%20the%20radar). This means that in order to view the image in the image in it's correct location you will need to project it to a coordinate system. The `geolocate_uavsar` function takes an array of lat, long, and heights called a .llh file and projects a uavsar image from radar to ground range. The .llh file is provided with slant range images in both the asf and jpl websites.
 
 ```
 from uavsar_pytools.georeference import geolocate_uavsar
