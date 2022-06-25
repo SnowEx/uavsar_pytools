@@ -316,3 +316,34 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user'):
         log.info('Finished converting image to WGS84 Geotiff.')
 
         return desc, z, type
+
+def array_to_tiff(arr, out_fp, desc, type):
+    # Pull the appropriate values from our annotation dictionary
+    nrow = desc[f'{type}.set_rows']['value']
+    ncol = desc[f'{type}.set_cols']['value']
+    # Pixel spacing
+    dlat = desc[f'{type}.row_mult']['value']
+    dlon = desc[f'{type}.col_mult']['value']
+    # Upper left corner coordinates
+    lat1 = desc[f'{type}.row_addr']['value']
+    lon1 = desc[f'{type}.col_addr']['value']
+    # Lat1/lon1 are already the center so for geotiff were good to go.
+    t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
+    # Build the transform and CRS
+    crs = CRS.from_user_input("EPSG:4326")
+
+    dataset = rasterio.open(
+        out_fp,
+        'w+',
+        driver='GTiff',
+        height=arr.shape[0],
+        width=arr.shape[1],
+        count=1,
+        dtype=arr.dtype,
+        crs=crs,
+        transform=t,
+    )
+    # Write out the data
+    dataset.write(arr, 1)
+
+    dataset.close()

@@ -12,9 +12,6 @@ uavsar_pytools.egg-info/
 dist/*
 uavsar_pytools.egg-info/
 
-# Distribution / packaging
-bin/
-
 develop-eggs/
 dist/
 eggs/
@@ -26,3 +23,4 @@ var/
 .installed.cfg
 *.egg
 /play
+*/__pycache__
