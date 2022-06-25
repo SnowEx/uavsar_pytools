@@ -94,12 +94,14 @@ The out_fp will be the file path to the newly created .tif file in your `out_dir
 
 ### Using new DEM to Generate Incidence Angle
 
-The incidence angle file provided with the uavsar images is generated using the [SRTM dem](https://www.usgs.gov/centers/eros/science/usgs-eros-archive-digital-elevation-shuttle-radar-topography-mission-srtm-1). If you want to generate incidence angles using a high resolution dem use the `calc_inc_angle` function.
+The incidence angle file provided with the uavsar images is generated using the [SRTM dem](https://www.usgs.gov/centers/eros/science/usgs-eros-archive-digital-elevation-shuttle-radar-topography-mission-srtm-1). If you want to generate incidence angles using a high resolution dem use the `calc_inc_angle` function. This will require georeferencing the look vector file and exporting the x,y, and z components of this look vector.
 
 ```
 from uavsar_pytools.incidence_angle import calc_inc_angle
 dem = numpy array or .tif file path of dem resampled to match uavsar.
-lkv_x = numpy array or .tif file path of x component of look vector file (.lkv) provided with the uavsar images.
+lkv_x = numpy array or .tif file path of x component of look vector file (.lkv)
+lkv_y = numpy array or .tif file path of y component of look vector file (.lkv)
+lkv_z = numpy array or .tif file path of z component of look vector file (.lkv)
 calc_inc_angle(dem, lkv_x, lkv_y, lkv_z)
 ```
 
@@ -109,8 +111,12 @@ Polarimetric analysis of SAR images quantifies the scattering properties of obje
 
 ```
 from uavsar.polsar import H_A_alpha_decomp
-in_dir = '/path/to/directory/full/of/polsar.grd # This should point to the directory with all 6 polarization (VVVV, HVHV, HVVV, HHHV, HHVV, HHHH) and the correct .ann file.
-out_dir = '/path/to/directory/to/output/H_A_Alpha_entropy # Will output 4 files to this directory.
+
+# This should point to the directory with all 6 polarization (VVVV, HVHV, HVVV, HHHV, HHVV, HHHH) and the correct .ann file.
+in_dir = '/path/to/directory/full/of/polsar.grd
+
+# Will output 4 files to this directory of H, A, alpha1, and mean alpha.
+out_dir = '/path/to/directory/to/output/H_A_Alpha_entropy
 H_A_alpha_decomp(in_dir, out_dir)
 ```
 
