@@ -49,7 +49,12 @@ def depth_from_phase(delta_phase, inc_angle, permittivity = None,
             raise ValueError('Permittivity array cannot contain values equal to 1.')
     elif permittivity == 1:
         raise ValueError('Permittivity cannot equal 1.')
+    # Check to make sure angles are in radians and densities are reasonable
+    if np.nanmean(inc_angle) > 2*np.pi:
+        raise ValueError('Incidence angle must be in radians.')
 
+    if np.nanmean(density) < 1:
+        raise ValueError('Densities must be in kg/m3.')
     # Calculate permittivity with density if perm. is not directly provided
     if not permittivity:
         print(f'No permittivity data provided -- calculating permittivity from snow density using method {method}.')
@@ -122,6 +127,11 @@ def phase_from_depth(delta_sd, inc_angle, permittivity = None,
             raise ValueError('Permittivity array cannot contain values equal to 1.')
     elif permittivity == 1:
         raise ValueError('Permittivity cannot equal 1.')
+    # Check to make sure angles are in radians and densities are reasonable
+    if np.nanmean(inc_angle) > 2*np.pi:
+        raise ValueError('Incidence angle must be in radians.')
+    if np.nanmean(density) < 1:
+        raise ValueError('Densities must be in kg/m3.')
 
     # Calculate permittivity with density if perm. is not directly provided
     if not permittivity:
