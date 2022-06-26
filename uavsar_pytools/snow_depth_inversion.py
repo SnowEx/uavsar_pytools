@@ -71,7 +71,7 @@ def depth_from_phase(delta_phase, inc_angle, permittivity = None,
 
     return delta_z
   
-  def phase_from_depth(delta_sd, inc_angle, permittivity = None,
+def phase_from_depth(delta_sd, inc_angle, permittivity = None,
                      density = None, method = 'guneriussen2001', 
                      wavelength = 0.238403545):
     """
