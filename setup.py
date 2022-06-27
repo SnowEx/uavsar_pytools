@@ -8,6 +8,7 @@ import io
 import os
 import sys
 from shutil import rmtree
+from argon2 import extract_parameters
 
 from setuptools import find_packages, setup, Command
 
@@ -18,7 +19,7 @@ URL = 'https://github.com/SnowEx/uavsar_pytools'
 EMAIL = 'zachkeskinen@gmail.com'
 AUTHOR = 'Zach Keskinen and Jack Tarricone'
 REQUIRES_PYTHON = '>=3.7.0'
-VERSION = '0.4.9'
+VERSION = '0.5.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
@@ -33,10 +34,11 @@ REQUIRED = [
     'matplotlib'
 ]
 
+
 # What packages are optional?
-# EXTRAS = {
-#     'nb_conda_kernels', 'ipykernel', 'ipywidgets', 'jupyter'
-# }
+EXTRAS = {
+    'nb_conda_kernels', 'ipykernel', 'ipywidgets', 'jupyter', 'GDAL'
+}
 
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
@@ -120,6 +122,8 @@ setup(
     # },
     install_requires=REQUIRED,
     # extras_require=EXTRAS,
+    test_suite='nose.collector',
+    tests_require=['nose'],
     include_package_data=True,
     license='MIT',
     classifiers=[

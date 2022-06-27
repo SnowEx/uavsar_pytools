@@ -1,12 +1,11 @@
 Metadata-Version: 2.1
 Name: uavsar-pytools
-Version: 0.4.9
+Version: 0.5.0
 Summary: Tools to download and convert ground projected UAVSAR images.
 Home-page: https://github.com/SnowEx/uavsar_pytools
 Author: Zach Keskinen and Jack Tarricone
 Author-email: zachkeskinen@gmail.com
 License: MIT
-Platform: UNKNOWN
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Programming Language :: Python
 Classifier: Programming Language :: Python :: 3
@@ -16,6 +15,8 @@ Classifier: Programming Language :: Python :: Implementation :: PyPy
 Requires-Python: >=3.7.0
 Description-Content-Type: text/markdown
 
+
+[![DOI](https://zenodo.org/badge/452858293.svg)](https://zenodo.org/badge/latestdoi/452858293)
 
 # uavsar_pytools
 
@@ -95,5 +96,3 @@ The provided jupyter notebook tutorial in the notebooks folder will walk you thr
 ## Need more help?
 
 The notebook folder in this repository has example notebooks for how to utilize this repository or reach out with questions, features, bugs, or anything else.
-
-

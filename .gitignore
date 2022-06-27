@@ -1,4 +1,5 @@
 /data
+/.vscode
 *.tif
 *.grd
 /test/data/imgs/*
@@ -8,17 +9,12 @@
 pipCommands
 test.ipynb
 uavsar_pytools.egg-info/
-build/*
 dist/*
 uavsar_pytools.egg-info/
 
-# Distribution / packaging
-bin/
-build/
 develop-eggs/
 dist/
 eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -26,3 +22,5 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+/play
+*/__pycache__

@@ -33,7 +33,7 @@ class UavsarCollection():
         find_urls() Finds all urls and returns thems as .results to the object. Each .result has a .properties property it inherits from asf_search.
     """
 
-    def __init__(self, collection, work_dir, overwrite = False, clean = True, debug = False, pols = None, dates = None, low_ram = True, inc = False):
+    def __init__(self, collection ,work_dir = '~', overwrite = False, clean = True, debug = False, pols = None, dates = None, low_ram = True, inc = False):
         self.collection = collection
         self.work_dir = expanduser(work_dir)
         self.overwrite = overwrite
