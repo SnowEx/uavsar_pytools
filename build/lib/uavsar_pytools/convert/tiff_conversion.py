@@ -1,5 +1,4 @@
 """
-Originally written by Micah J. Amended for uavsar_pytools by Zach Keskinen.
 Functions convert polsar, insar, and other associated UAVSAR files from binary format to geoTIFFS in WGS84.
 """
 
@@ -23,6 +22,7 @@ log.setLevel(logging.WARNING)
 def get_encapsulated(str_line, encapsulator):
     """
     Returns items found in the encapsulator, useful for finding units
+    Originally written by Micah J. Amended for uavsar_pytools by Zach Keskinen.
     Args:
         str_line: String that has encapusulated info we want removed
         encapsulator: string of characters encapusulating info to be removed
@@ -61,6 +61,8 @@ def read_annotation(ann_file):
     """
     .ann files describe the INSAR data. Use this function to read all that
     information in and return it as a dictionary
+    Originally written by Micah J. Amended for uavsar_pytools by Zach Keskinen.
+
     Expected format:
     `DEM Original Pixel spacing (arcsec) = 1`
     Where this is interpretted as:
@@ -136,6 +138,7 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user'):
     See: https://uavsar.jpl.nasa.gov/science/documents/polsar-format.html for polsar
     and: https://uavsar.jpl.nasa.gov/science/documents/rpi-format.html for insar
     and: https://uavsar.jpl.nasa.gov/science/documents/stack-format.html for SLC stacks.
+    Originally written by Micah J. Amended for uavsar_pytools by Zach Keskinen.
 
     Args:
         in_fp (string): path to input binary file
@@ -316,3 +319,34 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user'):
         log.info('Finished converting image to WGS84 Geotiff.')
 
         return desc, z, type
+
+def array_to_tiff(arr, out_fp, desc, type):
+    # Pull the appropriate values from our annotation dictionary
+    nrow = desc[f'{type}.set_rows']['value']
+    ncol = desc[f'{type}.set_cols']['value']
+    # Pixel spacing
+    dlat = desc[f'{type}.row_mult']['value']
+    dlon = desc[f'{type}.col_mult']['value']
+    # Upper left corner coordinates
+    lat1 = desc[f'{type}.row_addr']['value']
+    lon1 = desc[f'{type}.col_addr']['value']
+    # Lat1/lon1 are already the center so for geotiff were good to go.
+    t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
+    # Build the transform and CRS
+    crs = CRS.from_user_input("EPSG:4326")
+
+    dataset = rasterio.open(
+        out_fp,
+        'w+',
+        driver='GTiff',
+        height=arr.shape[0],
+        width=arr.shape[1],
+        count=1,
+        dtype=arr.dtype,
+        crs=crs,
+        transform=t,
+    )
+    # Write out the data
+    dataset.write(arr, 1)
+
+    dataset.close()

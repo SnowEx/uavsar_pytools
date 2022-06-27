@@ -5,4 +5,5 @@ from .uavsar_collection import UavsarCollection
 
 
 # Version of the package
-__version__ = "0.4.9"
+
+__version__ = "0.6.1"

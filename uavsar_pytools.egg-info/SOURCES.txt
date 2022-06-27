@@ -3,8 +3,13 @@ README.md
 setup.py
 title_figure.png
 tests/__init__.py
-tests/download_pytest.py
+tests/test_image.py
+tests/test_sum.py
 uavsar_pytools/__init__.py
+uavsar_pytools/georeference.py
+uavsar_pytools/incidence_angle.py
+uavsar_pytools/polsar.py
+uavsar_pytools/snow_depth_inversion.py
 uavsar_pytools/uavsar_collection.py
 uavsar_pytools/uavsar_image.py
 uavsar_pytools/uavsar_scene.py

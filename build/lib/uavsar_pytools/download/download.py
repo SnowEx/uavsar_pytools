@@ -107,7 +107,6 @@ def download_image(url, output_dir, ann = False, ann_url = None):
                     response = requests.get(ann_url)
                     if response.status_code == 200:
                         log.debug('Success in parsing ann url')
-
                     else:
                         ann_url = None
 

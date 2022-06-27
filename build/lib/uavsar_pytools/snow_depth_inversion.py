@@ -55,9 +55,8 @@ def depth_from_phase(delta_phase, inc_angle, permittivity = None,
     if np.nanmean(inc_angle) > 2*np.pi:
         raise ValueError('Incidence angle must be in radians.')
 
-    if density:
-        if np.nanmean(density) < 1:
-            raise ValueError('Densities must be in kg/m3.')
+    if np.nanmean(density) < 1:
+        raise ValueError('Densities must be in kg/m3.')
     # Calculate permittivity with density if perm. is not directly provided
     if not permittivity:
         print(f'No permittivity data provided -- calculating permittivity from snow density using method {method}.')
@@ -121,7 +120,7 @@ def phase_from_depth(delta_sd, inc_angle, permittivity = None,
     # Check to make sure all rasters are the same size
     for i in [inc_angle, permittivity, density]:
         if type(i) == np.ndarray:
-            if i.shape != delta_sd.shape:
+            if i.shape != delta_phase.shape:
                 raise ValueError('All raster datasets must be the same shape.')
     # Check to make sure permittivity has no values of 1 or 1.0
     # This is not likely for real data but messes with the calculation
@@ -133,9 +132,8 @@ def phase_from_depth(delta_sd, inc_angle, permittivity = None,
     # Check to make sure angles are in radians and densities are reasonable
     if np.nanmean(inc_angle) > 2*np.pi:
         raise ValueError('Incidence angle must be in radians.')
-    if density:
-        if np.nanmean(density) < 1:
-            raise ValueError('Densities must be in kg/m3.')
+    if np.nanmean(density) < 1:
+        raise ValueError('Densities must be in kg/m3.')
 
     # Calculate permittivity with density if perm. is not directly provided
     if not permittivity:

@@ -7,7 +7,6 @@ import numpy as np
 import rasterio as rio
 from osgeo import gdal, osr
 from uavsar_pytools.convert.tiff_conversion import read_annotation, array_to_tiff
-import rioxarray
 
 def geocodeUsingGdalWarp(infile, latfile, lonfile, outfile,
                          insrs=4326, outsrs=None,
@@ -199,15 +198,3 @@ def geolocate_uavsar(in_fp, ann_fp, out_dir, llh_fp):
     shutil.rmtree(tmp_dir)
 
     return res_f
-
-def reproject_clip_mask(in_fp, fp_to_match, out_fp):
-    """
-    Reproject, clip, and mask a tiff to another tiff.
-    
-    """
-    xds = rioxarray.open_rasterio(in_fp)
-    xds_match = rioxarray.open_rasterio(fp_to_match)
-    xds_repr_match = xds.rio.reproject_match(xds_match)
-    xds_repr_match.data[0][np.isnan(xds_match.data[0])] = np.nan
-    xds_repr_match.rio.to_raster(out_fp)
-    return out_fp
