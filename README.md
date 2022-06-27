@@ -19,7 +19,8 @@ pip install uavsar_pytools
 
 You will need a [.netrc file](https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html) in your home directory. This is a special file that stores passwords and usernames to be accessed by programs. If you are already registered at either the alaska satellite facility or jet propulsion laboratory skip step 1. Otherwise:
 
-1. If you need a username and password register at [link](https://urs.earthdata.nasa.gov/). Please ensure you have signed the end user agreement for Uavsar. You may need to attempt to download a uavsar image from vertex to prompt the end user agreement.
+
+1. If you need a username and password register at [link](https://search.asf.alaska.edu/). Please ensure you have signed the end user agreement for Uavsar. You need to attempt to download a uavsar image from vertex to prompt the end user agreement.
 
 2. In a python terminal or notebook enter:
 ```python
@@ -86,7 +87,7 @@ Each image pair found will be placed in its own directory with its Alaska Satell
 
 ### Finding URLs for your images
 
-The provided jupyter notebook tutorial in the notebooks folder will walk you through generating a bounding box for your area of interest and finding urls through the [asf_search api](https://github.com/asfadmin/Discovery-asf_search). However if you can also use the [vertex website](https://search.asf.alaska.edu/). After drawing a box and selecting UAVSAR from the platform selection pane (circled in red below) you will get a list of search results. Click on the ground projected image you want to download and right click on the download link (circled in orange below). Select ```copy link``` and you will have copied your relevant zip url.
+The provided jupyter notebook tutorial in the notebooks folder will walk you through generating a bounding box for your area of interest and finding urls through the [asf_search api](https://github.com/asfadmin/Discovery-asf_search). However if you want a GUI you can also use the [vertex website](https://search.asf.alaska.edu/). After drawing a box and selecting UAVSAR from the platform selection pane (circled in red below) you will get a list of search results. Click on the ground projected image you want to download and right click on the download link (circled in orange below). Select ```copy link``` and you will have copied your relevant zip url.
 
 <img src="https://github.com/SnowEx/uavsar_pytools/blob/main/vertex_example.png">
 
