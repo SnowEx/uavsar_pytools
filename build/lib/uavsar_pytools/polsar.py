@@ -10,10 +10,16 @@ Cloude and Pottier 1997 [DOI: 10.1109/36.551935]
 import math
 import numpy as np
 from glob import glob
+import os
 from os.path import join, basename
+import logging
+from tqdm import tqdm
 
 from uavsar_pytools.convert.tiff_conversion import read_annotation, array_to_tiff
 
+log = logging.getLogger(__name__)
+logging.basicConfig()
+log.setLevel(logging.DEBUG)
 
 def get_polsar_stack(in_dir, bounds = False):
     """
@@ -215,8 +221,11 @@ def T3_to_H(T3):
     weighted = values/np.sum(values)
     # Sum weighted values for H calculation
     h = 0
-    for i in range(3):
-        h +=  weighted[i] * math.log(weighted[i], 3)
+    if np.all(i)>0:
+        for i in range(3):
+            h +=  weighted[i] * math.log(weighted[i], 3)
+    else:
+        h = np.nan
     h *= -1
     return h
 
@@ -309,6 +318,8 @@ def uavsar_H_A_alpha(stack, parralel = False, mean_alpha=True):
     """
     if parralel:
         import dask.array as da
+        from dask.diagnostics import ProgressBar
+        ProgressBar().register()
         res = da.apply_along_axis(decomp_components, axis = 2, arr = stack, mean_alpha=mean_alpha, dtype = stack.dtype).compute()
     else:
         res_shape = list(stack.shape[:2])
@@ -331,14 +342,17 @@ def H_A_alpha_decomp(in_dir, out_dir, parralel = False):
     in_dir must have all polarizations of []
     out_dir - must exist
     """
+    log.info('Collecting polsar stack')
     stack = get_polsar_stack(in_dir)
     desc = read_annotation(glob(join(in_dir, '*.ann'))[0])
+    log.info(f'Starting H, A, Alpha Calculations. Parralelized = {parralel}')
     H, A, alpha1, mean_alpha = uavsar_H_A_alpha(stack, parralel = parralel)
     d = {}
     d['entropy'] = H
     d['anisotropy'] = A
     d['alpha1'] = alpha1
     d['mean_alpha'] = mean_alpha
+    os.makedirs(out_dir, exist_ok = True)
     for name, arr in d.items():
         out_fp = join(out_dir, name)
         array_to_tiff(arr, out_fp, desc = desc, type = 'grd_pwr')

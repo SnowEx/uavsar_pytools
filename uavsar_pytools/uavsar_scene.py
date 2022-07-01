@@ -45,7 +45,7 @@ class UavsarScene():
         self.zipped_fp = None
         self.ann_fp = None
         self.binary_fps = []
-        self.images = []
+        self.images = {}
         self.tmp_dir = None
         if pols:
             pols = [pol.upper() for pol in pols]
@@ -134,11 +134,11 @@ class UavsarScene():
                 ann_fp = ann_dic[f_pol]
             if not ann_fp:
                 ann_fp = ann_fps[0]
-            desc, array, type = grd_tiff_convert(f, out_dir, ann_fp = ann_fp, overwrite = True)
+            desc, array, type, out_fp = grd_tiff_convert(f, out_dir, ann_fp = ann_fp, overwrite = True)
             if self.low_ram:
-                self.images.append({'description': desc, 'type': type})
+                self.images[type] = {'description': desc, 'out_fp':out_fp}
             else:
-                self.images.append({'description': desc, 'array':  array, 'type': type})
+                self.images[type] = {'description': desc, 'array':  array, 'out_fp':out_fp}
         self.out_dir = out_dir
 
         if self.clean:
@@ -148,16 +148,17 @@ class UavsarScene():
         self.download()
         self.unzip()
         self.binary_to_tiffs()
-        df = pd.DataFrame(self.images[0]['description'])
+        df = pd.DataFrame(self.images.popitem()['description'])
         df.to_csv(join(self.out_dir, self.pair_name + '.csv'))
 
 
     def show(self, i):
         """
         Convenience function for checking a few images within the zip file for successful conversion.
+        Likely types = ['unw','int','cor','hgt','slope','']
         """
         if len(self.images) > i:
-            array =self.images[i]['array']
+            array = self.images[i]['array']
             if len(array.dtype) == 1:
                 d = array['real']
             else:

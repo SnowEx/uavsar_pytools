@@ -47,6 +47,8 @@ class UavsarImage():
             download_dir (str): directory to download image to. Will be created if it doesn't exists.
             ann (bool): download associated annotation file? [default = True]
         """
+        if self.url.split('.')[-1] == 'zip':
+            raise ValueError('Use UavsarScene for zip files.')
         out_dir = os.path.join(self.work_dir,sub_dir)
         self.bin_dir = out_dir
         if not os.path.exists(out_dir):
@@ -78,8 +80,8 @@ class UavsarImage():
             ann_fp = self.ann_fp
 
         result = grd_tiff_convert(in_fp = binary_fp, out_dir = out_dir, ann_fp = ann_fp, overwrite = overwrite)
-        if len(result) == 3:
-            self.desc, self.arr, self.type = result
+        if len(result) == 4:
+            self.desc, self.arr, self.type, _ = result
 
         if self.clean:
             shutil.rmtree(self.bin_dir)
