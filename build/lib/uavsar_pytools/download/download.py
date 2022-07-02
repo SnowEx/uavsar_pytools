@@ -44,7 +44,7 @@ def stream_download(url, output_f):
             log.warning(f'HTTP CODE {r.status_code}. Skipping download!')
 
 
-def download_image(url, output_dir, ann = False, ann_url = None):
+def download_image(url, output_dir, ann = True, ann_url = None):
     """
     Downloads uavsar InSAR files from a url.
     Args:
@@ -121,10 +121,12 @@ def download_image(url, output_dir, ann = False, ann_url = None):
                 else:
                     log.warning('No ann url found. Manually provide .ann url.')
                     ann_url = None
+                    ann_local = None
         else:
             ann_local = join(output_dir, basename(ann_url))
             if not isfile(ann_local):
                 stream_download(ann_url, ann_local)
+            return local, ann_local
 
         return local, None
 
