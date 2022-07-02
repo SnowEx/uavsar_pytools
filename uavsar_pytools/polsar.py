@@ -24,7 +24,7 @@ log.setLevel(logging.DEBUG)
 
 def get_polsar_stack(in_dir, bounds = False):
     """
-    Reads UAVSAR GRD files from input directory.
+    Reads UAVSAR GRD files or tiffs from input directory.
 
     Arguments
     ---------
