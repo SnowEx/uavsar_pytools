@@ -5,6 +5,7 @@ import shutil
 import logging
 import asf_search as asf
 import pandas as pd
+from random import choice
 
 from uavsar_pytools.uavsar_scene import UavsarScene
 from uavsar_pytools.uavsar_image import UavsarImage
@@ -33,7 +34,8 @@ class UavsarCollection():
         find_urls() Finds all urls and returns thems as .results to the object. Each .result has a .properties property it inherits from asf_search.
     """
 
-    def __init__(self, collection ,work_dir = '~', overwrite = False, clean = True, debug = False, pols = None, dates = None, low_ram = True, inc = False):
+    def __init__(self, collection ,work_dir = '~', overwrite = False, clean = True, \
+    debug = False, pols = None, dates = None, low_ram = True, inc = False, img_type = 'INTERFEROMETRY_GRD'):
         self.collection = collection
         self.work_dir = expanduser(work_dir)
         self.overwrite = overwrite
@@ -58,13 +60,13 @@ class UavsarCollection():
         # search for data
         if self.dates:
             self.results = asf.search(platform = 'UAVSAR',
-                        processingLevel = (['INTERFEROMETRY_GRD']),
+                        processingLevel = ([img_type]),
                         campaign = self.collection,
                         start = self.start_date,
                         end = self.end_date)
         else:
             self.results = asf.search(platform = 'UAVSAR',
-                        processingLevel = (['INTERFEROMETRY_GRD']),
+                        processingLevel = ([img_type]),
                         campaign = self.collection)
         log.info(f'Found {len(self.results)} image pairs')
 
@@ -75,8 +77,8 @@ class UavsarCollection():
             log.info(f'Starting on: {url}')
             scene = UavsarScene(url = url, work_dir= self.work_dir, pols = self.pols, clean = self.clean, low_ram=self.low_ram)
             scene.url_to_tiffs()
-            d1 = scene.images[0]['description']['start time of acquisition for pass 1']['value']
-            d2 = scene.images[0]['description']['start time of acquisition for pass 2']['value']
+            d1 = choice(list(scene.images.values()))['description']['start time of acquisition for pass 1']['value']
+            d2 = choice(list(scene.images.values()))['description']['start time of acquisition for pass 2']['value']
             if self.inc:
                 inc_res = asf.search(platform = 'UAVSAR',
                         processingLevel = (['INC']),
