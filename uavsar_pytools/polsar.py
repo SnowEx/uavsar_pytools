@@ -9,6 +9,7 @@ Cloude and Pottier 1997 [DOI: 10.1109/36.551935]
 
 import math
 import numpy as np
+import rasterio as rio
 from glob import glob
 import os
 from os.path import join, basename
@@ -41,31 +42,45 @@ def get_polsar_stack(in_dir, bounds = False):
         Array of size [rows x columns x 6] containing UAVSAR data.
     """
     req_pols = set(['VVVV', 'HVHV', 'HVVV', 'HHHV', 'HHVV', 'HHHH'])
-    # Read ann file
-    ann_fp = glob(join(in_dir, '*.ann'))[0]
-    desc = read_annotation(ann_fp)
-    nrows = desc['grd_pwr.set_rows']['value']
-    ncols = desc['grd_pwr.set_cols']['value']
-    fps = glob(join(in_dir, '*.grd'))
-    # Read GRD files
+    # Check for tiffs:
+    fps = glob(join(in_dir, '*.tiff'))
     pol = {}
-    for f in fps:
-        name = basename(f).split('_')[-3][4:]
-        # Complex variables
-        if name == 'HVVV' or name == 'HHHV' or name == 'HHVV':
-            arr = np.fromfile(f, dtype = np.complex64).reshape(nrows, ncols)
-        # Real variables
-        else:
-            arr = np.fromfile(f, dtype = np.float32).reshape(nrows, ncols)
-        
-        arr[arr == 0] = np.nan
-        if bounds:
-            xmin, xmax, ymin, ymax = bounds
-            arr = arr[xmin:xmax,ymin:ymax]
-        pol[name] = arr
+
+    if len(fps) == 0:
+        # Read ann file
+        ann_fp = glob(join(in_dir, '*.ann'))[0]
+        desc = read_annotation(ann_fp)
+        nrows = desc['grd_pwr.set_rows']['value']
+        ncols = desc['grd_pwr.set_cols']['value']
+        fps = glob(join(in_dir, '*.grd'))
+        # Read GRD files
+        for f in fps:
+            name = basename(f).split('_')[-3][4:]
+            # Complex variables
+            if name == 'HVVV' or name == 'HHHV' or name == 'HHVV':
+                arr = np.fromfile(f, dtype = np.complex64).reshape(nrows, ncols)
+            # Real variables
+            else:
+                arr = np.fromfile(f, dtype = np.float32).reshape(nrows, ncols)
+            
+            arr[arr == 0] = np.nan
+            if bounds:
+                xmin, xmax, ymin, ymax = bounds
+                arr = arr[xmin:xmax,ymin:ymax]
+            pol[name] = arr
+    else:
+        for f in fps:
+            with rio.open(f) as src:
+                arr = src.read(1)
+            name = basename(f).split('_')[5][4:]
+            # Complex variables
+            pol[name] = arr
+
     missing_pols = req_pols - req_pols.intersection(pol.keys())
     assert len(missing_pols) == 0, f'Missing required polarizations : {missing_pols}'
     stack = np.dstack([pol['HHHH'], pol['HHHV'], pol['HVHV'], pol['HVVV'], pol['HHVV'], pol['VVVV']])
+            
+        
     
     return stack
 
