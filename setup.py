@@ -19,7 +19,7 @@ URL = 'https://github.com/SnowEx/uavsar_pytools'
 EMAIL = 'zachkeskinen@gmail.com'
 AUTHOR = 'Zach Keskinen and Jack Tarricone'
 REQUIRES_PYTHON = '>=3.7.0'
-VERSION = '0.5.0'
+VERSION = '0.6.2'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
@@ -31,7 +31,9 @@ REQUIRED = [
     'geopandas',
     'numpy',
     'rasterio',
-    'matplotlib'
+    'matplotlib',
+    'rioxarray',
+    'dask'
 ]
 
 
@@ -132,7 +134,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy'
     ],

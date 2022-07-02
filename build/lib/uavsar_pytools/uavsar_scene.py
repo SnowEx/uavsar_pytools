@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import logging
 import shutil
-from random import choice
 
 from uavsar_pytools.download.download import download_zip
 from uavsar_pytools.convert.file_control import unzip
@@ -36,7 +35,7 @@ class UavsarScene():
         desc (dict): description of image from annotation file.
     """
 
-    def __init__(self, url, work_dir, clean = True, debug = False, pols = None, low_ram = False):
+    def __init__(self, url, work_dir, clean = False, debug = False, pols = None, low_ram = False):
         self.url = url
         self.pair_name = basename(url).split('.')[0]
         self.work_dir = os.path.expanduser(work_dir)
@@ -46,7 +45,7 @@ class UavsarScene():
         self.zipped_fp = None
         self.ann_fp = None
         self.binary_fps = []
-        self.images = {}
+        self.images = []
         self.tmp_dir = None
         if pols:
             pols = [pol.upper() for pol in pols]
@@ -135,39 +134,38 @@ class UavsarScene():
                 ann_fp = ann_dic[f_pol]
             if not ann_fp:
                 ann_fp = ann_fps[0]
-            desc, array, type, out_fp = grd_tiff_convert(f, out_dir, ann_fp = ann_fp, overwrite = True, debug=self.debug)
+            desc, array, type = grd_tiff_convert(f, out_dir, ann_fp = ann_fp, overwrite = True)
             if self.low_ram:
-                self.images[type] = {'description': desc, 'out_fp':out_fp, 'type':type}
+                self.images.append({'description': desc, 'type': type})
             else:
-                self.images[type] = {'description': desc, 'array':  array, 'out_fp':out_fp, 'type':type}
+                self.images.append({'description': desc, 'array':  array, 'type': type})
         self.out_dir = out_dir
 
         if self.clean:
-            shutil.rmtree(dirname(self.tmp_dir))
+            shutil.rmtree(self.tmp_dir)
 
     def url_to_tiffs(self):
         self.download()
         self.unzip()
         self.binary_to_tiffs()
-        df = pd.DataFrame(choice(list(self.images.values()))['description'])
+        df = pd.DataFrame(self.images[0]['description'])
         df.to_csv(join(self.out_dir, self.pair_name + '.csv'))
 
 
     def show(self, i):
         """
         Convenience function for checking a few images within the zip file for successful conversion.
-        Likely types = ['unw','int','cor','hgt','slope','']
         """
-        if i in self.images.keys():
-            array = self.images[i]['array']
-            if array.dtype == np.float64:
-                vmin, vmax = np.nanquantile(array, [0.1,0.9])
-                plt.imshow(array, vmin = vmin ,vmax = vmax)
+        if len(self.images) > i:
+            array =self.images[i]['array']
+            if len(array.dtype) == 1:
+                d = array['real']
             else:
-                array = np.abs(array)
-                vmin, vmax = np.nanquantile(array, [0.1,0.9])
-                plt.imshow(array, vmin = vmin ,vmax = vmax)
-            plt.title(self.images[i]['type'])
+                d = (array['real']**2 + array['imaginary']**2)**0.5
+            std_low = np.nanmedian(d) - np.nanstd(d)
+            std_high = np.nanmedian(d) + np.nanstd(d)
+            plt.imshow(d, vmin = std_low ,vmax = std_high)
+            plt.title(os.path.basename(self.url))
             plt.colorbar()
             plt.show()
 

@@ -7,3 +7,5 @@ geopandas
 numpy
 rasterio
 matplotlib
+rioxarray
+dask

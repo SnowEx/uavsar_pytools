@@ -28,7 +28,7 @@ class UavsarImage():
         desc (dict) = description of image from annotation file.
     """
 
-    def __init__(self, url, work_dir, ann_url = None, debug = False, clean = True):
+    def __init__(self, url, work_dir, ann_url = None, debug = False, clean = False):
         self.url = url
         self.work_dir = os.path.expanduser(work_dir)
         self.debug = debug
@@ -39,7 +39,6 @@ class UavsarImage():
         self.arr = None
         self.desc = None
         self.type = None
-        self.out_fp = None
 
     def download(self, sub_dir = 'bin_imgs/', ann = True):
         """
@@ -48,8 +47,6 @@ class UavsarImage():
             download_dir (str): directory to download image to. Will be created if it doesn't exists.
             ann (bool): download associated annotation file? [default = True]
         """
-        if self.url.split('.')[-1] == 'zip':
-            raise ValueError('Use UavsarScene for zip files.')
         out_dir = os.path.join(self.work_dir,sub_dir)
         self.bin_dir = out_dir
         if not os.path.exists(out_dir):
@@ -81,8 +78,8 @@ class UavsarImage():
             ann_fp = self.ann_fp
 
         result = grd_tiff_convert(in_fp = binary_fp, out_dir = out_dir, ann_fp = ann_fp, overwrite = overwrite)
-        if len(result) == 4:
-            self.desc, self.arr, self.type, self.out_fp = result
+        if len(result) == 3:
+            self.desc, self.arr, self.type = result
 
         if self.clean:
             shutil.rmtree(self.bin_dir)
