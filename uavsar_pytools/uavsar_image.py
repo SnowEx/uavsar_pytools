@@ -28,7 +28,7 @@ class UavsarImage():
         desc (dict) = description of image from annotation file.
     """
 
-    def __init__(self, url, work_dir, ann_url = None, debug = False, clean = False):
+    def __init__(self, url, work_dir, ann_url = None, debug = False, clean = True):
         self.url = url
         self.work_dir = os.path.expanduser(work_dir)
         self.debug = debug
@@ -39,6 +39,7 @@ class UavsarImage():
         self.arr = None
         self.desc = None
         self.type = None
+        self.out_fp = None
 
     def download(self, sub_dir = 'bin_imgs/', ann = True):
         """
@@ -81,7 +82,7 @@ class UavsarImage():
 
         result = grd_tiff_convert(in_fp = binary_fp, out_dir = out_dir, ann_fp = ann_fp, overwrite = overwrite)
         if len(result) == 4:
-            self.desc, self.arr, self.type, _ = result
+            self.desc, self.arr, self.type, self.out_fp = result
 
         if self.clean:
             shutil.rmtree(self.bin_dir)
