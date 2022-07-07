@@ -52,11 +52,11 @@ You will now have a folder of analysis ready tiff images in WGS84 from the provi
 If you are interested in working with each image's numpy array the class has an `scene.images` property that contains the type, description, and numpy array for each image in the zip file. This is available after running `scene.url_to_tiffs()`.
 
 ```python
-print(scene.image[0]['type'] # figure out the type of the first image
-scene.images[0]['array'] # get the first image numpy array for analysis
+scene.images['unw']['array'] # get the unwrapped phase numpy array for analysis
+scene.images['cor']['out_fp'] # get file path of saved tiff for coherence
 ```
 
-For quick checks to visualize the data there is also a convenience method `scene.show(i = 1)` that allows you to quickly visualize the first image, or by iterating on i = 2,3,4, etc all the images in the zip file. This method is only available after converting binary images to array with `scene.url_to_tiffs()`.
+For quick checks to visualize the data there is also a convenience method `scene.show(i = 'cor')` that allows you to quickly visualize the a specific type of image. This method is only available after converting binary images to array with `scene.url_to_tiffs()`. For insar the file types will be 'cor', 'unw', 'int' and for polsars it will be 'HHHH', 'HHHV', etc.
 
 ### Downloading whole collections
 
@@ -84,6 +84,8 @@ collection.collection_to_tiffs()
 ```
 
 Each image pair found will be placed in its own directory with its Alaska Satellite Facility derived name as the directory name. Unlike for UavsarScene this functionality will automatically delete the downloaded binary and zip files after converting them to tiffs to save space.
+
+`UavsarCollection` be default will search only for ground projected interferograms. To search for ground projected polsar images use `img_type = 'PROJECTED'` in the instantiation of the collection.
 
 ### Finding URLs for your images
 
@@ -131,8 +133,9 @@ Polarimetric analysis of SAR images quantifies the scattering properties of obje
 from uavsar.polsar import H_A_alpha_decomp
 
 # This should point to the directory with all 6 polarization
-# (VVVV, HVHV, HVVV, HHHV, HHVV, HHHH) and the correct .ann file.
-in_dir = '/path/to/directory/full/of/polsar.grd
+# (VVVV, HVHV, HVVV, HHHV, HHVV, HHHH) and the correct .ann file
+# or the directory should have tiffs of all 6 polarizations.
+in_dir = '/path/to/directory/full/of/polsar.tiff
 
 # Will output 4 files to this directory of H, A, alpha1, and mean alpha.
 out_dir = '/path/to/directory/to/output/H_A_Alpha_entropy
