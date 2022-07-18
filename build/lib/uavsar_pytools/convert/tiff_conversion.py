@@ -1,11 +1,12 @@
 """
-Originally written by Micah J. Amended for uavsar_pytools by Zach Keskinen.
-Functions convert polsar, insar, and other associated UAVSAR files from binary format to geoTIFFS in WGS84.
+Improved functions convert polsar, insar, and other associated UAVSAR files from binary format to geoTIFFS in WGS84.
 """
 
 import os
 from os.path import isdir, exists, basename, dirname, join, isfile
 from glob import glob
+from re import L
+from matplotlib.pyplot import polar
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
@@ -18,11 +19,11 @@ import logging
 
 log = logging.getLogger(__name__)
 logging.basicConfig()
-log.setLevel(logging.WARNING)
 
 def get_encapsulated(str_line, encapsulator):
     """
     Returns items found in the encapsulator, useful for finding units
+    Originally written by Micah J. Amended for uavsar_pytools by Zach Keskinen.
     Args:
         str_line: String that has encapusulated info we want removed
         encapsulator: string of characters encapusulating info to be removed
@@ -61,6 +62,8 @@ def read_annotation(ann_file):
     """
     .ann files describe the INSAR data. Use this function to read all that
     information in and return it as a dictionary
+    Originally written by Micah J. Amended for uavsar_pytools by Zach Keskinen.
+
     Expected format:
     `DEM Original Pixel spacing (arcsec) = 1`
     Where this is interpretted as:
@@ -130,18 +133,25 @@ def read_annotation(ann_file):
 
     return data
 
-def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user'):
+def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user', debug = False):
     """
     Converts a single binary image either polsar or insar to geotiff.
     See: https://uavsar.jpl.nasa.gov/science/documents/polsar-format.html for polsar
     and: https://uavsar.jpl.nasa.gov/science/documents/rpi-format.html for insar
     and: https://uavsar.jpl.nasa.gov/science/documents/stack-format.html for SLC stacks.
+    Originally written by Micah J. Amended for uavsar_pytools by Zach Keskinen.
 
     Args:
         in_fp (string): path to input binary file
         out_dir (string): directory to save geotiff in
         ann_fp (string): path to UAVSAR annotation file
     """
+
+    if debug:
+        log.setLevel(logging.DEBUG)
+    else:
+        log.setLevel(logging.WARNING)
+
     out_fp = join(out_dir, basename(in_fp)) + '.tiff'
 
     # Determine type of image
@@ -151,22 +161,22 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user'):
     if not exists(in_fp):
         raise Exception(f'Input file path: {in_fp} does not exist.')
 
-    extens = basename(in_fp).split('.')[1:]
-    if len(extens) == 1:
-        type = extens[0]
-        subtype = None
-    elif len(extens) == 2:
-        subtype = extens[0]
-        type = extens[1]
+    exts = basename(in_fp).split('.')[1:]
+    if len(exts) == 2:
+        ext = exts[1]
+        type = exts[0]
+    elif len(exts) == 1:
+        type = ext = exts[0]
     else:
-        raise Exception('Can only handle one or two extensions on input file')
-
+        raise ValueError('Unable to parse extensions')
+    log.info(f'Extenstion: {ext}, type : {type}')
+    
     # Find annotation file in same directory if no user given one
     if not ann_fp:
-        if subtype:
-            ann_fp = in_fp.replace(f'.{subtype}', '').replace(f'.{type}', '.ann')
+        if ext == 'grd' or ext == 'slc':
+            ann_fp = in_fp.replace(f'.{type}', '').replace(f'.{ext}', '.ann')
         else:
-            ann_fp = in_fp.replace(f'.{type}', '.ann')
+            ann_fp = in_fp.replace(f'.{ext}', '.ann')
         if not exists(ann_fp):
             search_base = '_'.join(basename(in_fp).split('.')[0].split('_')[:4])
             search_full = os.path.join(os.path.dirname(in_fp), f'{search_base}*.ann')
@@ -182,20 +192,16 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user'):
     # Check for compatible extensions
     if type == 'zip':
         raise Exception('Can not convert zipped directories. Unzip first.')
-    if type == 'dat' or type == 'kmz' or type == 'kml' or type == '.png' or type == 'tif':
+    if type == 'dat' or type == 'kmz' or type == 'kml' or type == 'png' or type == 'tif':
         raise Exception(f'Can not handle {type} products')
-    if type == 'slc' or type == 'mlc':
-        raise Exception('Unable to convert slant range products to WGS84. Download and convert .grd file.')
-    if subtype == 'kmz':
-        raise Exception('Can not handle kmz interferograms.')
     if type == 'ann':
         raise Exception(f'Can not convert annotation files.')
 
     # Check for slant range files and ancillary files
     anc = None
-    if type == 'slope' or type == 'hgt' or type == 'inc':
+    if type == 'slope' or type == 'inc':
         anc = True
-
+        log.info(f'Identified as ancillary')
     # Check if file already exists and for overwriting
     ans = 'N'
     if exists(out_fp):
@@ -214,105 +220,179 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user'):
         # Read in annotation file
         desc = read_annotation(ann_fp)
         #pd.DataFrame.from_dict(desc).to_csv('../data/test.csv')
-        if 'flight id for pass 2' in desc.keys():
+        if 'start time of acquisition for pass 1' in desc.keys():
             mode = 'insar'
         else:
             mode = 'polsar'
         log.info(f'Working with {mode}')
 
         # Determine the correct file typing for searching our data dictionary
-        slant = None
         if not anc:
             if mode == 'polsar':
-                polarization = basename(in_fp).split('_')[5][-4:]
-                if type == 'grd':
+                if type == 'hgt':
+                    search = type
+                else:
+                    polarization = basename(in_fp).split('_')[5][-4:]
                     if polarization == 'HHHH' or polarization == 'HVHV' or polarization == 'VVVV':
-                            type = f'{type}_pwr'
+                            search = f'{type}_pwr'
                     else:
-                        type = f'{type}_mag'
-                # type = f'{type}_pwr'
+                        search = f'{type}_phase'
+                    type = polarization
 
             elif mode == 'insar':
-                if type == 'int':
-                    type = 'grd_phs'
+                if ext == 'grd':
+                    if type == 'int':
+                        search = f'grd_phs'
+                    else:
+                        search = 'grd'
                 else:
-                    type = 'grd'
-                if subtype == None:
-                    raise Exception('Unable to convert slant range. Download and convert .grd file.')
+                    if type == 'int':
+                        search = 'slt_phs'
+                    else:
+                        search = 'slt'
+        else:
+            search = type
 
-        log.debug(f'type: {type}')
+        log.debug(f'Searching with: {search}')
 
         # Pull the appropriate values from our annotation dictionary
-        nrow = desc[f'{type}.set_rows']['value']
-        ncol = desc[f'{type}.set_cols']['value']
+        nrow = desc[f'{search}.set_rows']['value']
+        ncol = desc[f'{search}.set_cols']['value']
         log.debug(f'rows: {nrow} x cols: {ncol} pixels')
 
-        # Ground projected images
-        # Delta latitude and longitude
-        dlat = desc[f'{type}.row_mult']['value']
-        dlon = desc[f'{type}.col_mult']['value']
-        log.debug(f'latitude delta: {dlat}, longitude delta: {dlon} deg/pixel')
-        # Upper left corner coordinates
-        lat1 = desc[f'{type}.row_addr']['value']
-        lon1 = desc[f'{type}.col_addr']['value']
-        log.debug(f'Ref Latitude: {lat1}, Longitude: {lon1} degrees')
+        if ext == 'grd' or anc:
+            # Ground projected images
+            # Delta latitude and longitude
+            dlat = desc[f'{search}.row_mult']['value']
+            dlon = desc[f'{search}.col_mult']['value']
+            log.debug(f'latitude delta: {dlat}, longitude delta: {dlon} deg/pixel')
+            # Upper left corner coordinates
+            lat1 = desc[f'{search}.row_addr']['value']
+            lon1 = desc[f'{search}.col_addr']['value']
+            log.debug(f'Ref Latitude: {lat1}, Longitude: {lon1} degrees')
 
-        # Lat1/lon1 are already the center so for geotiff were good to go.
-        t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
+            # Lat1/lon1 are already the center so for geotiff were good to go.
+            t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
+
+            # Build the transform and CRS
+            crs = CRS.from_user_input("EPSG:4326")
 
         # Get data type specific data
-        bytes = desc[f'{type}.val_size']['value']
+        bytes = desc[f'{search}.val_size']['value']
         endian = desc['val_endi']['value']
         log.debug(f'Bytes = {bytes}, Endian = {endian}')
 
         # Set up datatypes
-        com_des = desc[f'{type}.val_frmt']['value']
+        com_des = desc[f'{search}.val_frmt']['value']
         com = False
         if 'COMPLEX' in com_des:
             com = True
         log.debug(f'Complex descriptor {com_des}')
-        if subtype == 'int' or type == 'int':
-            dtype = np.dtype([('real', '<f4'), ('imaginary', '<f4')])
+        if com:
+            dtype = np.complex64
         else:
-            if com:
-                dtype = np.dtype([('real', '<f4'), ('imaginary', '<f4')])
-            else:
-                dtype = np.dtype([('real', '<f{}'.format(bytes))])
+            dtype = np.float32
         log.debug(f'Data type = {dtype}')
         # Read in binary data
         z = np.fromfile(in_fp, dtype = dtype)
 
         # Reshape it to match what the text file says the image is
-        z = z.reshape(nrow, ncol)
+        if type == 'slope':
+            z[z==-10000]= np.nan
+            slopes = {}
+            slopes['east'] = z[::2].reshape(nrow, ncol)
+            slopes['north'] = z[1::2].reshape(nrow, ncol)
+        else:
+            slopes = None
+            z = z.reshape(nrow, ncol)
 
-        # Build the transform and CRS
-        crs = CRS.from_user_input("EPSG:4326")
 
-        for comp in ['real', 'imaginary']:
-            if comp in z.dtype.names:
-                d = z[comp]
-                # Change zeros and -10,000 to nans based on documentation.
-                d[d==0]= np.nan
-                d[d==-10000]= np.nan
-                if type == 'slope':
-                    d[d == np.nanmin(d)] = np.nan
+        # Change zeros and -10,000 to nans based on documentation.
+        if com:
+            z[z== 0 + 0*1j] = np.nan + np.nan * 1j
+        else:
+            z[z==0]= np.nan
+            z[z==-10000]= np.nan
 
-                log.debug(f'Writing {comp} component to {out_fp}...')
+        if slopes:
+            slope_fps = []
+            for direction, array in slopes.items():
+                slope_fp = out_fp.replace('.tiff',f'.{direction}.tiff')
+                log.debug(f'Writing to {slope_fp}...')
+                dataset = rasterio.open(
+                slope_fp,
+                'w+',
+                driver='GTiff',
+                height=array.shape[0],
+                width=array.shape[1],
+                count=1,
+                dtype=dtype,
+                crs=crs,
+                transform=t,)
+                # Write out the data
+                dataset.write(array, 1)
+
+                dataset.close()
+                slope_fps.append(slope_fp)
+            return desc, z, type, slope_fps
+        else:
+            log.debug(f'Writing to {out_fp}...')
+
+            if ext == 'grd' or anc:
                 dataset = rasterio.open(
                     out_fp,
                     'w+',
                     driver='GTiff',
-                    height=d.shape[0],
-                    width=d.shape[1],
+                    height=z.shape[0],
+                    width=z.shape[1],
                     count=1,
-                    dtype=d.dtype,
+                    dtype=dtype,
                     crs=crs,
-                    transform=t,
-                )
-                # Write out the data
-                dataset.write(d, 1)
+                    transform=t,)
+                log.info('Finished converting image to WGS84 Geotiff.')
+            else:
+                dataset = rasterio.open(
+                    out_fp,
+                    'w+',
+                    driver='GTiff',
+                    height=z.shape[0],
+                    width=z.shape[1],
+                    count=1,
+                    dtype=dtype,)
+            # Write out the data
+            dataset.write(z, 1)
 
-                dataset.close()
-        log.info('Finished converting image to WGS84 Geotiff.')
+            dataset.close()
 
-        return desc, z, type
+        return desc, z, type, out_fp
+
+def array_to_tiff(arr, out_fp, desc, type):
+    # Pull the appropriate values from our annotation dictionary
+    nrow = desc[f'{type}.set_rows']['value']
+    ncol = desc[f'{type}.set_cols']['value']
+    # Pixel spacing
+    dlat = desc[f'{type}.row_mult']['value']
+    dlon = desc[f'{type}.col_mult']['value']
+    # Upper left corner coordinates
+    lat1 = desc[f'{type}.row_addr']['value']
+    lon1 = desc[f'{type}.col_addr']['value']
+    # Lat1/lon1 are already the center so for geotiff were good to go.
+    t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
+    # Build the transform and CRS
+    crs = CRS.from_user_input("EPSG:4326")
+
+    dataset = rasterio.open(
+        out_fp,
+        'w+',
+        driver='GTiff',
+        height=arr.shape[0],
+        width=arr.shape[1],
+        count=1,
+        dtype=arr.dtype,
+        crs=crs,
+        transform=t,
+    )
+    # Write out the data
+    dataset.write(arr, 1)
+
+    dataset.close()

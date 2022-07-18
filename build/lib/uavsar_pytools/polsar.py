@@ -9,7 +9,6 @@ Cloude and Pottier 1997 [DOI: 10.1109/36.551935]
 
 import math
 import numpy as np
-import pandas as pd
 import rasterio as rio
 from glob import glob
 import os
@@ -48,7 +47,6 @@ def get_polsar_stack(in_dir, bounds = False):
     pol = {}
 
     if len(fps) == 0:
-        log.info('No tiffs found. Searching for grd files.')
         # Read ann file
         ann_fp = glob(join(in_dir, '*.ann'))[0]
         desc = read_annotation(ann_fp)
@@ -71,8 +69,6 @@ def get_polsar_stack(in_dir, bounds = False):
                 arr = arr[xmin:xmax,ymin:ymax]
             pol[name] = arr
     else:
-        
-        desc = pd.read_csv(glob(join(in_dir, '*.csv'))[0], index_col = [0]).to_dict()
         for f in fps:
             with rio.open(f) as src:
                 arr = src.read(1)
@@ -83,8 +79,10 @@ def get_polsar_stack(in_dir, bounds = False):
     missing_pols = req_pols - req_pols.intersection(pol.keys())
     assert len(missing_pols) == 0, f'Missing required polarizations : {missing_pols}'
     stack = np.dstack([pol['HHHH'], pol['HHHV'], pol['HVHV'], pol['HVVV'], pol['HHVV'], pol['VVVV']])
+            
         
-    return stack, desc
+    
+    return stack
 
 
 def calc_C3(HHHH, HHHV, HVHV, HVVV, HHVV, VVVV):
@@ -238,12 +236,9 @@ def T3_to_H(T3):
     weighted = values/np.sum(values)
     # Sum weighted values for H calculation
     h = 0
-    if np.all(weighted) > 0:
-        try:
-            for i in range(3):
-                h +=  weighted[i] * math.log(weighted[i], 3)
-        except ValueError:
-            h = np.nan
+    if np.all(i)>0:
+        for i in range(3):
+            h +=  weighted[i] * math.log(weighted[i], 3)
     else:
         h = np.nan
     h *= -1
@@ -363,8 +358,8 @@ def H_A_alpha_decomp(in_dir, out_dir, parralel = False):
     out_dir - must exist
     """
     log.info('Collecting polsar stack')
-    stack, desc = get_polsar_stack(in_dir)
-    # desc = read_annotation(glob(join(in_dir, '*.ann'))[0])
+    stack = get_polsar_stack(in_dir)
+    desc = read_annotation(glob(join(in_dir, '*.ann'))[0])
     log.info(f'Starting H, A, Alpha Calculations. Parralelized = {parralel}')
     H, A, alpha1, mean_alpha = uavsar_H_A_alpha(stack, parralel = parralel)
     d = {}
