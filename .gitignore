@@ -10,7 +10,6 @@ pipCommands
 test.ipynb
 uavsar_pytools.egg-info/
 dist/*
-uavsar_pytools.egg-info/
 
 develop-eggs/
 dist/
