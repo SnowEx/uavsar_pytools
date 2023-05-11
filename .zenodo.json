@@ -1,0 +1,27 @@
+{
+    "description": "<p>This is an initial release for beta-testing by a small group of folks.</p>", 
+    "license": "MIT", 
+    "title": "ZachKeskinen/phase-o-matic: v0.0.1-alpha", 
+    "version": "v0.0.1-alpha", 
+    "upload_type": "software", 
+    "publication_date": "2023-05-11", 
+    "creators": [
+        {
+            "affiliation": "Boise State University", 
+            "name": "Zachary Keskinen"
+        }
+    ], 
+    "access_right": "open", 
+    "related_identifiers": [
+        {
+            "scheme": "url", 
+            "identifier": "https://github.com/ZachKeskinen/phase-o-matic/tree/v0.0.1-alpha", 
+            "relation": "isSupplementTo"
+        }, 
+        {
+            "scheme": "doi", 
+            "identifier": "10.5281/zenodo.7926685", 
+            "relation": "isVersionOf"
+        }
+    ]
+}
