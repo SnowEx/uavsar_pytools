@@ -1,0 +1,13 @@
+cff-version: 1.0.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Hoppinen"
+    given-names: "Zachary"
+    orcid: "https://orcid.org/0000-0003-0916-7774"
+  - family-names: "Tarricone"
+    given-names: "Jack"
+title: "uavsar_pytools"
+version: 0.7.0
+doi: 10.5281/zenodo.6789624
+date-released: 2022-05-01
+url: "https://github.com/SnowEx/uavsar_pytools"
