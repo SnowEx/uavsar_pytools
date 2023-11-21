@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 import shutil
 from glob import glob
@@ -211,3 +212,26 @@ def reproject_clip_mask(in_fp, fp_to_match, out_fp):
     xds_repr_match.data[0][np.isnan(xds_match.data[0])] = np.nan
     xds_repr_match.rio.to_raster(out_fp)
     return out_fp
+
+def combo_llhs(data_dir: Path):
+    """
+    Combines segment LLH files into a single combined llh file for georeferencing.
+    """
+    assert data_dir.exists()
+
+    re_llhs = {'lat':[], 'lon': [], 'height':[]}
+    for llh in sorted(data_dir.glob('*.llh')):
+        segment = llh.stem.split('_')[-2].replace('s','')
+
+        data = np.fromfile(llh, np.dtype('<f'))
+        lat, lon, height = data[::3], data[1::3], data[2::3]
+        for key, da in zip(re_llhs.keys(), [lat, lon, height]):
+            re_llhs[key].extend(da)
+    full = np.empty(len(re_llhs['lat'])*3, dtype='>f')
+    full[0::3] = re_llhs['lat']
+    full[1::3] = re_llhs['lon']
+    full[2::3] = re_llhs['height']
+
+    full.tofile('full.llh')
+
+    return full
