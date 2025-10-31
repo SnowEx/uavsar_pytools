@@ -16,7 +16,10 @@ import os
 from os.path import join, basename
 import logging
 from tqdm import tqdm
-
+from itertools import combinations
+from itertools import combinations_with_replacement
+import matplotlib.pyplot as plt
+from pathlib import Path
 from uavsar_pytools.convert.tiff_conversion import read_annotation, array_to_tiff
 
 log = logging.getLogger(__name__)
@@ -31,7 +34,7 @@ def get_polsar_stack(in_dir, bounds = False):
     ---------
     in_dir : str
         Input directory that contains UAVSAR GRD data. Must have all 
-        crosspruducts (HHHH, HVHV, VVVV, HHHV, HVHV, and HVVV) and the 
+        crossproducts (HHHH, HVHV, VVVV, HHHV, HVHV, and HVVV) and the 
         associated .ann file.
 
     
@@ -85,6 +88,57 @@ def get_polsar_stack(in_dir, bounds = False):
     stack = np.dstack([pol['HHHH'], pol['HHHV'], pol['HVHV'], pol['HVVV'], pol['HHVV'], pol['VVVV']])
         
     return stack, desc
+
+def get_polsar_stack_carsar(in_dir, image_width):
+    """
+    Reads CarSAR slc files from input directory.
+
+    Arguments
+    ---------
+    in_dir : str
+        Input directory that contains CarSAR slc data. Must have HH, HV, VV, and VH pols. 
+    
+    Returns
+    -------
+    stack : np.array
+        Array of size [6 x rows x columns] containing CarSAR data.
+    """
+    in_dir = Path(in_dir)  # make sure it's a Path object
+    pol_keywords = ['HH', 'HV', 'VV', 'VH']  # polarization channels to search for
+    width = image_width
+
+    # Search for all .slc files and group them by polarization keyword
+    slcs = {}
+    for f in in_dir.glob('*.slc'):
+        for pol in pol_keywords:
+            if pol in f.name:
+                slcs[pol] = np.fromfile(f, '>c8').reshape(-1, width)
+                break  # only take the first matching pol per file
+
+    # Check if we found the required polarizations
+    required_pols = ['HH', 'HV', 'VV','VH']  # Modify as needed
+    for pol in required_pols:
+        if pol not in slcs:
+            raise ValueError(f"Missing required polarization: {pol}")
+            
+    s_matrix_elements = {
+        'HHHH': slcs['HH'] * np.conjugate(slcs['HH']),
+        'HHHV': slcs['HH'] * np.conjugate(slcs['HV']),
+        'HHVV': slcs['HH'] * np.conjugate(slcs['VV']),
+        'HVHV': slcs['HV'] * np.conjugate(slcs['HV']),
+        'HVVV': slcs['HV'] * np.conjugate(slcs['VV']),
+        'VVVV': slcs['VV'] * np.conjugate(slcs['VV']),
+    }
+    HHHH = s_matrix_elements['HHHH']
+    HHHV = s_matrix_elements['HHHV']
+    HVHV = s_matrix_elements['HVHV']
+    HVVV = s_matrix_elements['HVVV']
+    HHVV = s_matrix_elements['HHVV']
+    VVVV = s_matrix_elements['VVVV']
+    
+    stack = np.stack([HHHH, HHHV, HVHV, HVVV, HHVV, VVVV])
+    
+    return stack
 
 
 def calc_C3(HHHH, HHHV, HVHV, HVVV, HHVV, VVVV):
@@ -182,6 +236,32 @@ def T3_to_alpha1(T3):
     
     return alpha_1
 
+def vectorized_T3_to_alpha1(T3):
+    """
+    Calculates alpha1 decomposition product from the coherency matrix T3. Uses
+    the eigenvector-eigenvalue identity method described by Nielsen 2022 
+    [DOI: 10.1109/LGRS.2022.3169994]. This is a per-pixel calculation.
+
+    Arguments
+    ---------
+    T3 : np.array [3x3xheightxwidth]
+        T3 matrix (use output from C3_to_T3 function)
+    
+    Returns
+    -------
+    alpha_1 : np.array[heightxwidth]
+        alpha 1 angle in degrees. 
+    """
+    T3 = np.transpose(T3, [2, 3, 0, 1])
+    M1 = T3[..., 1:,1:]
+    # Calculate M1, the first minor of T3 by deleting first row/col
+    t3, t2, t1 = np.transpose(np.linalg.eigvalsh(T3), [2, 0, 1])
+    m2, m1 = np.transpose(np.linalg.eigvalsh(M1), [2, 0, 1])
+    e11 = np.sqrt(((t1 - m1)*(t1 - m2))/((t1-t2)*(t1-t3)))
+    alpha_1 = np.rad2deg(np.arccos(e11))
+
+    return alpha_1
+
 def T3_to_mean_alpha(T3):
     """
     Calculates mean alpha angle decomposition product from the coherency matrix 
@@ -212,6 +292,43 @@ def T3_to_mean_alpha(T3):
     # Calculate weighted eigenvalues
     t3_values = [t3, t2, t1]
     weighted = t3_values/np.sum(t3_values)
+    mean_alpha = weighted[2]*alpha_1 + weighted[1]*alpha_2 + weighted[0]*alpha_3
+    mean_alpha = np.rad2deg(mean_alpha)
+    
+    return mean_alpha
+
+def vectorized_T3_to_mean_alpha(T3):
+    """
+    Calculates mean alpha angle decomposition product from the coherency matrix 
+    T3. Uses the eigenvector-eigenvalue identity method described by Nielsen 2022 
+    [DOI: 10.1109/LGRS.2022.3169994]. This is a per-pixel calculation.
+
+    Arguments
+    ---------
+    T3 : np.array [3x3xheightxwidth]
+        T3 matrix (use output from C3_to_T3 function)
+    
+    Returns
+    -------
+    mean_alpha : np.array[heightxwidth]
+        mean alpha angle in degrees. 
+    """
+    # change shape to make last two dims square
+    T3 = np.transpose(T3, [2, 3, 0, 1])
+    M1 = T3[..., 1:,1:]
+    # Calculate eigenvalues
+    t3, t2, t1 = np.transpose(np.linalg.eigvalsh(T3), [2, 0, 1])
+    m2, m1 = np.transpose(np.linalg.eigvalsh(M1), [2, 0, 1])
+    # Eigenvector components from Nielsen 2022
+    e11 = np.sqrt(((t1 - m1)*(t1 - m2))/((t1-t2)*(t1-t3)))
+    alpha_1 = np.arccos(e11)
+    e21 = np.sqrt(((t2 - m1)*(t2-m2))/((t2-t1)*(t2-t3)))
+    alpha_2 = np.arccos(e21)
+    e31 = np.sqrt(((t3 - m1)*(t3-m2))/((t3-t1)*(t3-t2)))
+    alpha_3 = np.arccos(e31)
+    # Calculate weighted eigenvalues
+    t3_values = np.stack([t3, t2, t1], axis=0)
+    weighted = t3_values/np.sum(t3_values, axis=0)
     mean_alpha = weighted[2]*alpha_1 + weighted[1]*alpha_2 + weighted[0]*alpha_3
     mean_alpha = np.rad2deg(mean_alpha)
     
@@ -249,6 +366,37 @@ def T3_to_H(T3):
     h *= -1
     return h
 
+def vectorized_T3_to_H(T3):
+    """
+    Calculates entropy (H) decomposition product from the coherency matrix T3.
+    Formula from Cloude and Pottier 1997 [DOI: 10.1109/36.551935]. This is a 
+    per-pixel calculation.
+
+    Arguments
+    ---------
+    T3 : np.array [3x3xheightxwidth]
+        T3 matrix (use output from C3_to_T3 function)
+    
+    Returns
+    -------
+    H : np.array[heightxwidth]
+        Entropy (0 <= H <= 1).
+    """
+    T3 = np.transpose(T3, (2, 3, 0, 1))
+
+    # Compute eigenvalues
+    values = np.linalg.eigvalsh(T3)  # Shape: [rows, cols, 3]
+
+    # Normalize to get probabilities
+    values_sum = np.sum(eigvals, axis=-1, keepdims=True)
+    weighted = values / values_sum
+
+    # Mask to avoid log(0)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        logweighted = np.log(weighted) / np.log(3)  # Base 3 log
+        h = -np.nansum(weighted * logweighted, axis=-1)
+
+    return h
 
 def T3_to_A(T3):
     """
@@ -268,6 +416,27 @@ def T3_to_A(T3):
     """
     values = np.linalg.eigvalsh(T3)
     A = (values[1] - values[0]) / (values[1] + values[0])
+    return A
+
+def vectorized_T3_to_A(T3):
+    """
+    Calculates anisotropy (A) decomposition product from the coherency matrix 
+    T3. Formula from Cloude and Pottier 1997 [DOI: 10.1109/36.551935]. This is 
+    a per-pixel calculation.
+
+    Arguments
+    ---------
+    T3 : np.array [3x3xheightxwidth]
+        T3 matrix (use output from C3_to_T3 function)
+    
+    Returns
+    -------
+    A : np.array[heightxwidth]
+        Anisotropy (0 <= H <= 1).
+    """
+    T3 = np.transpose(T3, (2, 3, 0, 1))
+    values = np.linalg.eigvalsh(T3)
+    A = (values[..., 1] - values[..., 0]) / (values[..., 1] + values[..., 0])
     return A
 
 
@@ -314,6 +483,50 @@ def decomp_components(stack, mean_alpha=True):
         return H, A, alpha1, meanalpha
     else:
         return H, A, alpha1
+
+def vectorized_decomp_components(stack, mean_alpha=True):
+    """
+    Function to calculate H-A-alpha (entropy-anisotropy-alpha) decomposition 
+    from a stack of UAVSAR data. This function operates over the depth axis of 
+    the stack and can be applied to an entire scene/array using 
+    np.apply_along_axis. Can also calculate mean alpha using boolean keyword.
+
+    Note if any cell location in the stack has one or more NaN elements it will
+    that cell location will be skipped entirely. This enables functionality
+    over entire UAVSAR scenes without having to mask NaN or clip rasters. 
+
+    Arguments
+    ---------
+    stack : np.array
+        Array of size [rows x cols x 6] containing UAVSAR data. Can use the output of 
+        the get_polsar_stack function. 
+    mean_alpha : bool (Default: True)
+        If True, calculates and returns mean alpha product in addition to H, A, 
+        and alpha.
+
+    Returns
+    -------
+    H, A, alpha1 (opt. meanalpha) : float
+        Decomposition products calculated at a given pixel location.
+    """
+    if np.any(np.isnan(stack)) or len(stack) != 6:
+        if mean_alpha:
+            return np.repeat(np.nan, 4)
+        else:
+            return np.repeat(np.nan, 3)
+    # Matrices
+    C3 = calc_C3(*stack)
+    T3 = C3_to_T3(C3)
+    # Decomposition products
+    H = vectorized_T3_to_H(T3)
+    A = vectorized_T3_to_A(T3)
+    alpha1 = vectorized_T3_to_alpha1(T3)
+    
+    if mean_alpha:
+        meanalpha = vectorized_T3_to_mean_alpha(T3)
+        return H, A, alpha1, meanalpha
+    else:
+        return H, A, alpha1
     
 
 def uavsar_H_A_alpha(stack, parralel = False, mean_alpha=True):
@@ -357,16 +570,80 @@ def uavsar_H_A_alpha(stack, parralel = False, mean_alpha=True):
     else:
         return H, A, alpha1
 
+def vectorized_uavsar_H_A_alpha(stack, parralel = False, mean_alpha=True):
+    """
+    Apply-along-axis version of decomp_products function. This function can be 
+    used to perform H-A-alpha decomposition on a full UAVSAR scene. 
+
+    Arguments
+    ---------
+    stack : np.array
+        Array of size [rows x columns x 6] containing UAVSAR data. Can use the output of 
+        the get_polsar_stack function. 
+    mean_alpha : bool (Default: True)
+        If True, calculates and returns mean alpha product in addition to H, A, 
+        and alpha.
+
+    Returns
+    -------
+    H, A, alpha1 (opt. meanalpha) : np.array
+        Decomposition products calculated for the input scene. Size of all
+        output arrays will match rows/cols of the input stack.
+    """
+    if parralel:
+        import dask.array as da
+        from dask.diagnostics import ProgressBar
+        ProgressBar().register()
+        res = da.apply_along_axis(vectorize_decomp_components, axis = 2, arr = stack, mean_alpha=mean_alpha, 
+        dtype = stack.dtype).compute()
+    else:
+        res_shape = list(stack.shape[:2])
+        res_shape.append(4)
+        res = np.empty(res_shape)
+        iters = stack.shape[0]*stack.shape[1]
+        for i, j in tqdm(np.ndindex(stack.shape[:2]), total = iters):
+            res[i,j,:] = vectorized_decomp_components(stack[i,j])
+    H = res[:,:,0]
+    A = res[:,:,1]
+    alpha1 = res[:,:,2]
+    if mean_alpha:
+        mean_alpha = res[:,:,3]
+        return H, A, alpha1, mean_alpha
+    else:
+        return H, A, alpha1
+
 def H_A_alpha_decomp(in_dir, out_dir, parralel = False):
     """
     in_dir must have all polarizations of []
     out_dir - must exist
+    only works for UAVSAR
+    """
+    log.info('Collecting polsar stack')
+    stack, desc = get_polsar_stack(in_dir)
+    desc = read_annotation(glob(join(in_dir, '*.ann'))[0])
+    log.info(f'Starting H, A, Alpha Calculations. Parralelized = {parralel}')
+    H, A, alpha1, mean_alpha = uavsar_H_A_alpha(stack, parralel = parralel)
+    d = {}
+    d['entropy'] = H
+    d['anisotropy'] = A
+    d['alpha1'] = alpha1
+    d['mean_alpha'] = mean_alpha
+    os.makedirs(out_dir, exist_ok = True)
+    for name, arr in d.items():
+        out_fp = join(out_dir, name)
+        array_to_tiff(arr, out_fp, desc = desc, type = 'grd_pwr')
+
+def vectorized_H_A_alpha_decomp(in_dir, out_dir, parralel = False):
+    """
+    in_dir must have all polarizations of []
+    out_dir - must exist
+    only works for UAVSAR
     """
     log.info('Collecting polsar stack')
     stack, desc = get_polsar_stack(in_dir)
     # desc = read_annotation(glob(join(in_dir, '*.ann'))[0])
     log.info(f'Starting H, A, Alpha Calculations. Parralelized = {parralel}')
-    H, A, alpha1, mean_alpha = uavsar_H_A_alpha(stack, parralel = parralel)
+    H, A, alpha1, mean_alpha = vectorized_uavsar_H_A_alpha(stack, parralel = parralel)
     d = {}
     d['entropy'] = H
     d['anisotropy'] = A
