@@ -251,6 +251,8 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user', debug = 
                     else:
                         search = 'slt'
         else:
+            if type == 'inc':
+                search = 'hgt'
             search = type
 
         log.debug(f'Searching with: {search}')
