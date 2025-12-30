@@ -157,3 +157,64 @@ def phase_from_depth(delta_sd, inc_angle, permittivity = None,
     delta_phase = - delta_sd * (4 * np.pi * (np.cos(inc_angle) - np.sqrt(perm - np.sin(inc_angle)**2))) / wavelength
 
     return delta_phase
+
+def swe_from_phase_oveisgharan(phase, incidence_angle, wavelength = 0.0555):
+  """
+  Calculates snow water equivalent (SWE) from interferometric SAR phase
+  using the empirical phase–SWE relationship of Oveisgharan et al. (2022).
+  This formulation accounts for incidence-angle dependence and is suitable
+  for estimating SWE changes from unwrapped phase measurements.
+  
+  Parameters
+  ----------
+  phase : NumPy array
+      Unwrapped interferometric phase [radians].
+  incidence_angle : NumPy array or float
+      Incidence angle data. If NumPy array, must be the same shape as the
+      phase array. If float, a constant incidence angle will be applied to
+      the entire scene. Angles may be provided in degrees or radians.
+  wavelength : float
+      Radar wavelength [m]. Default value of 0.0555 m is appropriate for
+      Sentinel-1 C-band.
+  
+  Returns
+  -------
+  swe : NumPy array
+      Snow water equivalent [m].
+  """
+  if np.nanmax(incidence_angle) > np.pi:
+      incidence_angle = np.deg2rad(incidence_angle)
+  k = 2 * np.pi / wavelength
+  inc_term = (-0.6784*incidence_angle**2 + 0.2899 * incidence_angle - 0.8473)
+  return phase / (-2 * k * inc_term)
+
+def swe_from_phase_leinss(phase, incidence_angle, alpha = 1, wavelength = 0.238403545):
+    """
+    Calculates snow water equivalent (SWE) from interferometric SAR phase
+    using the empirical phase-SWE relationship of Leinss et al. (2015).
+
+    Parameters
+    ----------
+    phase : NumPy array
+        Unwrapped interferometric phase [radians].
+    incidence_angle : NumPy array or float
+        Incidence angle data. If NumPy array, must be the same shape as the
+        phase array. If float, a constant incidence angle will be applied
+        to the entire scene. Angles may be provided in degrees or radians.
+    alpha : float
+        Empirical scaling factor accounting for snow microstructure and
+        permittivity effects. Default is 1.0.
+    wavelength : float
+        Radar wavelength [m]. Default value of 0.238403545 m is for UAVSAR L-band.
+
+    Returns
+    -------
+    swe : NumPy array
+        Snow water equivalent [m].
+    """
+
+    if np.nanmax(incidence_angle) > np.pi:
+        incidence_angle = np.deg2rad(incidence_angle)
+    k = 2 * np.pi / wavelength
+    inc_term = 1.59 + incidence_angle**(5/2)
+    return phase / (k * alpha * inc_term)
