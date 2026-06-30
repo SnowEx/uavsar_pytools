@@ -110,10 +110,51 @@ def geolocate_uavsar(in_fp, ann_fp, out_dir, llh_fp):
                 dst.write(arr.astype(arr.dtype), 1)
 
     # Add VRT file for each tif
-    tifs = glob(join(tmp_dir, '*.tif')) # list all .llh files
-    for tiff in tifs: # loop to open and translate .llh to .vrt, and save .vrt using gdal
-        raster_dataset = gdal.Open(tiff, gdal.GA_ReadOnly) # read in rasters
-        raster = gdal.Translate(join(tmp_dir, basename(tiff).replace('.tif','.vrt')), raster_dataset, format = 'VRT', outputType = gdal.GDT_Float32)
+#    tifs = glob(join(tmp_dir, '*.tif')) # list all .llh files
+#    for tiff in tifs: # loop to open and translate .llh to .vrt, and save .vrt using gdal
+#        raster_dataset = gdal.Open(tiff, gdal.GA_ReadOnly) # read in rasters
+#        raster = gdal.Translate(join(tmp_dir, basename(tiff).replace('.tif','.vrt')), raster_dataset, format = 'VRT', outputType = gdal.GDT_Float32)
+# Detect target grid resolution dynamically from input filename (e.g., '1x1', '2x8')
+    # Detect target grid resolution dynamically from the input filename
+    if '1x1' in basename(in_fp):
+        target_spacing = '1x1'
+    elif '1x4' in basename(in_fp):
+        target_spacing = '1x4'
+    else:
+        target_spacing = '2x8'
+    
+    # Fetch target dimensions safely depending on file type (read metadata directly for VRTs)
+    if ext in ['slc', 'lkv']:
+        t_rows = desc.get(f'{ext}_1_{target_spacing} rows', {}).get('value', nrows)
+        t_cols = desc.get(f'{ext}_1_{target_spacing} columns', {}).get('value', ncols)
+    elif ext == 'vrt':
+        with rio.open(in_fp) as src:
+            t_rows = src.height
+            t_cols = src.width
+    else:
+        t_rows, t_cols = nrows, ncols
+
+    # Add VRT file for each tif, applying bilinear interpolation if grid sizes don't match
+    tifs = glob(join(tmp_dir, '*.tif')) 
+    for tiff in tifs: 
+        raster_dataset = gdal.Open(tiff, gdal.GA_ReadOnly) 
+        if t_rows != nrows or t_cols != ncols:
+            raster = gdal.Translate(
+                join(tmp_dir, basename(tiff).replace('.tif','.vrt')), 
+                raster_dataset, 
+                format='VRT', 
+                outputType=gdal.GDT_Float32,
+                width=t_cols, 
+                height=t_rows, 
+                resampleAlg=gdal.GRA_Bilinear
+            )
+        else:
+            raster = gdal.Translate(
+                join(tmp_dir, basename(tiff).replace('.tif','.vrt')), 
+                raster_dataset, 
+                format='VRT', 
+                outputType=gdal.GDT_Float32
+            )
     raster_dataset = None
 
     vrts = glob(join(tmp_dir, '*.vrt'))
@@ -132,9 +173,7 @@ def geolocate_uavsar(in_fp, ann_fp, out_dir, llh_fp):
         }
 
     if ext == 'slc':
-        spacing = in_fp.replace(f'.{ext}','')[-3:]
-        nrows = desc[f'{ext}_1_{spacing} rows']['value']
-        ncols = desc[f'{ext}_1_{spacing} columns']['value']
+        nrows, ncols = t_rows, t_cols
         dtype = np.complex64
         arr = np.fromfile(in_fp, dtype = dtype).reshape(nrows, ncols)
         d_arrs = {}
@@ -142,9 +181,7 @@ def geolocate_uavsar(in_fp, ann_fp, out_dir, llh_fp):
         d_arrs['imag'] = arr.imag
 
     elif ext == 'lkv':
-        spacing = in_fp.replace(f'.{ext}','')[-3:]
-        nrows = desc[f'{ext}_1_{spacing} rows']['value']
-        ncols = desc[f'{ext}_1_{spacing} columns']['value']
+        nrows, ncols = t_rows, t_cols
         dtype = np.dtype('<f')
         arr = np.fromfile(in_fp, dtype = dtype)
         d_arrs = {}
@@ -153,6 +190,7 @@ def geolocate_uavsar(in_fp, ann_fp, out_dir, llh_fp):
         d_arrs[f'z'] = arr[2::3].reshape(nrows, ncols)
 
     elif ext == 'vrt':
+        nrows, ncols = t_rows, t_cols
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", message="Dataset has no geotransform, gcps, or rpcs. The identity matrix be returned.")
             second_ext = basename(in_fp).split('.')[-2]
@@ -166,6 +204,9 @@ def geolocate_uavsar(in_fp, ann_fp, out_dir, llh_fp):
             d_arrs = {}
             ext = second_ext
             d_arrs[second_ext] = arr
+
+    # Update profile to use the new native SLC/LKV dimensions before saving
+    profile.update({'width': ncols, 'height': nrows})
 
     # Save out tifs
     with warnings.catch_warnings():
@@ -182,13 +223,17 @@ def geolocate_uavsar(in_fp, ann_fp, out_dir, llh_fp):
 
         vrts = glob(join(tmp_dir, f'*{ext}*.vrt'))
         res_f = []
+        
+       # If 1x1 or 1x4, pass None to let GDAL auto-calculate the native high-res spacing
+        warp_spacing = None if target_spacing in ['1x1', '1x4'] else [.00005556, .00005556]
+
         for f in vrts:
             out_f = join(out_dir, basename(f).replace('vrt','tif'))
             geocodeUsingGdalWarp(infile = f,
                                 latfile = latf,
                                 lonfile = longf,
                                 outfile = out_f,
-                                spacing=[.00005556,.00005556])
+                                spacing=warp_spacing) # Pass the dynamic spacing
 
             res_f.append(out_f)
 
