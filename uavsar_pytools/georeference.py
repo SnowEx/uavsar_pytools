@@ -30,7 +30,7 @@ def geocodeUsingGdalWarp(infile, latfile, lonfile, outfile,
     tempds = driver.Create(tempvrtname, inds.RasterXSize, inds.RasterYSize, 0)
     
     for ii in range(inds.RasterCount):
-        band = inds.GetRasterBand(1)
+        band = inds.GetRasterBand(ii+1)
         tempds.AddBand(band.DataType)
         tempds.GetRasterBand(ii+1).SetMetadata({'source_0': sourcexmltmpl.format(infile, ii+1)}, 'vrt_sources')
   
@@ -55,7 +55,7 @@ def geocodeUsingGdalWarp(infile, latfile, lonfile, outfile,
     if spacing is None:
         spacing = [None, None]
     warpOptions = gdal.WarpOptions(format=fmt,
-                                xRes=spacing[0], yRes=spacing[0],
+                                xRes=spacing[0], yRes=spacing[1],
                                 dstSRS=outsrs, outputBounds = bounds, dstNodata = -9999,
                                 resampleAlg=method, geoloc=True)
     gdal.Warp(outfile, tempvrtname, options=warpOptions)
@@ -91,11 +91,21 @@ def geolocate_uavsar(in_fp, ann_fp, out_dir, llh_fp):
     res[f'llh.long'] = arr[1::3].reshape(nrows, ncols)
     res[f'llh.dem'] = arr[2::3].reshape(nrows, ncols)
 
+    # Latitudes and longitudes are 0 outside of the swath. Left in the geolocation
+    # arrays gdal.Warp stretches the output grid from the scene all the way to
+    # lat, long 0 and fails to invert the geolocation transform.
+    valid = (res['llh.lat'] != 0) & (res['llh.long'] != 0)
+    assert valid.any(), f'No valid latitudes and longitudes in {llh_fp}'
+    for name in ['llh.lat', 'llh.long']:
+        res[name] = np.where(valid, res[name], np.nan).astype('float32')
+    bounds = (np.nanmin(res['llh.long']), np.nanmin(res['llh.lat']),
+              np.nanmax(res['llh.long']), np.nanmax(res['llh.lat']))
+
     profile = {
     'driver': 'GTiff',
     'interleave': 'band',
     'tiled': False,
-    'nodata': 0,
+    'nodata': np.nan,
     'width': ncols,
     'height':nrows,
     'count':1,
@@ -188,15 +198,11 @@ def geolocate_uavsar(in_fp, ann_fp, out_dir, llh_fp):
                                 latfile = latf,
                                 lonfile = longf,
                                 outfile = out_f,
-                                spacing=[.00005556,.00005556])
+                                spacing=[.00005556,.00005556],
+                                bounds = bounds)
 
             res_f.append(out_f)
 
-        if ext == 'unw':
-            print('Ignore the error message: Unable to compute bounds. It is related\n\
-                to the pixels created by the conversion along the edge of topography.\n\
-                Error message is known and should not be an issue.')
-        
     shutil.rmtree(tmp_dir)
 
     return res_f
