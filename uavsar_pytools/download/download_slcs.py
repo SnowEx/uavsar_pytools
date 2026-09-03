@@ -24,7 +24,8 @@ def get_uavsar_slcs(
     end_date: str = '2021-12-31',
     pol: list = ['HH'],
     seg: list = ['s1', 's2', 's3'],
-    pxlsp: list = ['2x8']
+    pxlsp: list = ['2x8'],
+    version: int = 1
 ) -> dict: 
     """
     Query the ASF DAAC for UAVSAR flight lines and generate a dictionary of JPL download URLs.
@@ -51,8 +52,9 @@ def get_uavsar_slcs(
         List of data segments/swaths to include. Default is ['s1', 's2', 's3'].
     pxlsp : list of str, optional
         Pixel spacing strings to append to the filename. Default is ['2x8'].
-    tag : list of str, optional
-        List of file type tags to include (e.g., 'BU' for baseline-updated). Default is ['BU'].
+    version : int, optional
+        Version number to download. Default is 1. Note that if version number is invalid, 
+        no error will be raised until download_uavsar_slcs is called. 
 
     Returns
     -------
@@ -124,28 +126,28 @@ def get_uavsar_slcs(
         
         flight1_id = parts[3] + '_' + parts[4]
         band = parts[6]
-        version = parts[8]
+        v = str(version).zfill(2)
         date1 = parts[5]
-        
-        # for t in tag:
+
+        # append filenames to the list of urls to download 
         for p in pol: 
             urls = []
             for s in seg: 
                 for pxl in pxlsp:
-                    f1_base = f"{site}_{flight_line}_{flight1_id}_{date1}_{band}{p}_{version}_[BC/BU]"
+                    f1_base = f"{site}_{flight_line}_{flight1_id}_{date1}_{band}{p}_{v}_[BC/BU]"
 
                     urls.append(f"{f1_base}_{s}_{pxl}.slc")
 
                     # this will cause some repeats, since there is only one per seg
                     if getllh: 
-                        urls.append(f"{site}_{flight_line}_{version}_[BC/BU]_{s}_{pxl}.llh")
+                        urls.append(f"{site}_{flight_line}_{v}_[BC/BU]_{s}_{pxl}.llh")
                     if getlkv: 
-                        urls.append(f"{site}_{flight_line}_{version}_[BC/BU]_{s}_{pxl}.lkv")
+                        urls.append(f"{site}_{flight_line}_{v}_[BC/BU]_{s}_{pxl}.lkv")
 
             if getann: 
                 urls.append(f"{f1_base}.ann")
             if getdop: 
-                    urls.append(f"{site}_{flight_line}_{version}_[BC/BU].dop")
+                    urls.append(f"{site}_{flight_line}_{v}_[BC/BU].dop")
 
             dict_key = f'{flight_abbr}_{flight_line}'
             for url in urls:
@@ -228,7 +230,9 @@ def download_uavsar_slcs(files: list, out_dir: str):
             break 
 
     if not release_folder:
-        log.error("Could not find a valid release folder for these files.")
+        log.error("Could not find a valid release folder for these files. The Release " + 
+                  "folder may be out-of-range, or you may have tried to download a " + 
+                  "version that doesn't exist.")
         return
 
     # download files
