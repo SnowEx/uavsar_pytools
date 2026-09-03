@@ -229,12 +229,11 @@ def download_uavsar_slcs(files: list, out_dir: str):
                 release_folder = r
                 tag = t
                 break
+        if release_folder: 
+            break 
 
     if not release_folder:
         log.error("Could not find a valid release folder for these files.")
-        return
-    elif not tag: 
-        log.error("Could not determine the correct tag (BU/BC) for these files.")
         return
 
     # download files
