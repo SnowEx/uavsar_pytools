@@ -8,6 +8,7 @@ Cloude and Pottier 1997 [DOI: 10.1109/36.551935]
 """
 
 import math
+import re
 import numpy as np
 import pandas as pd
 import rasterio as rio
@@ -25,6 +26,28 @@ from uavsar_pytools.convert.tiff_conversion import read_annotation, array_to_tif
 log = logging.getLogger(__name__)
 logging.basicConfig()
 log.setLevel(logging.DEBUG)
+
+def pol_from_fp(fp):
+    """
+    Pulls the polarization out of a UAVSAR file name.
+
+    The number of underscore separated fields varies between products, so the
+    polarization is matched against the band and polarization field itself
+    (e.g. L090HHHH) rather than found by position.
+
+    Arguments
+    ---------
+    fp : str
+        File path or name of a UAVSAR file, e.g. evergl_15704_09044_000_090616_L090HHHH_CX_02_grd.grd
+
+    Returns
+    -------
+    pol : str
+        Four character polarization, e.g. HHHH.
+    """
+    match = re.search(r'[A-Z]\d{3}([HV]{4})', basename(fp))
+    assert match, f'Unable to find a polarization in file name: {basename(fp)}'
+    return match.group(1)
 
 def get_polsar_stack(in_dir, bounds = False):
     """
@@ -60,7 +83,7 @@ def get_polsar_stack(in_dir, bounds = False):
         fps = glob(join(in_dir, '*.grd'))
         # Read GRD files
         for f in fps:
-            name = basename(f).split('_')[-3][4:]
+            name = pol_from_fp(f)
             # Complex variables
             if name == 'HVVV' or name == 'HHHV' or name == 'HHVV':
                 arr = np.fromfile(f, dtype = np.complex64).reshape(nrows, ncols)
@@ -79,7 +102,7 @@ def get_polsar_stack(in_dir, bounds = False):
         for f in fps:
             with rio.open(f) as src:
                 arr = src.read(1)
-            name = basename(f).split('_')[5][4:]
+            name = pol_from_fp(f)
             # Complex variables
             pol[name] = arr
 
