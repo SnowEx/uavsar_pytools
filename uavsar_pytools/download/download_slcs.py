@@ -65,8 +65,6 @@ def get_uavsar_slcs(
     ValueError
         If the provided `flight_name` is not found in the valid campaigns mapping.
     """
-    # jpl_site = 'https://downloaduav2.jpl.nasa.gov'
-    # release_folder = 'Release30'
     links = defaultdict(list)
 
     campaigns = { # SnowEx campaigns and abbreviations
@@ -111,7 +109,7 @@ def get_uavsar_slcs(
                            beamMode='POL',
                            start=start_date,
                            end=end_date)
-    
+
     log.info(f"{len(grans)} granules found for {flight_name}")
     
     flight_lines = set()
@@ -135,9 +133,6 @@ def get_uavsar_slcs(
             for s in seg: 
                 for pxl in pxlsp:
                     f1_base = f"{site}_{flight_line}_{flight1_id}_{date1}_{band}{p}_{version}_[BC/BU]"
-                    
-                    # stack_dir = f"{site}_{flight_line}_{version}"
-                    # base_url = f"{jpl_site}/{release_folder}/{stack_dir}"
 
                     urls.append(f"{f1_base}_{s}_{pxl}.slc")
 
@@ -207,12 +202,12 @@ def download_uavsar_slcs(files: list, out_dir: str):
         return
 
     # very basic check for filename structure 
-    try: 
-        parts = files[0].split('_')
-        flight_folder = f"{parts[0]}_{parts[1]}_{parts[6]}"
-    except:
+    parts = files[0].split('_')
+    tag_idx = next((i for i, p in enumerate(parts) if p.startswith('[BC/BU]')), None)
+    if tag_idx is None or tag_idx < 3:
         log.error(f"Filename {files[0]} was not recognized as a valid UAVSAR filename.")
         return
+    flight_folder = f"{parts[0]}_{parts[1]}_{parts[tag_idx - 1]}"
 
     # find valid release folder
     release_folder = None
