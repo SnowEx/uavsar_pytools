@@ -11,7 +11,9 @@ import os
 from os.path import join, isdir, isfile, basename, dirname, exists
 from tqdm.auto import tqdm
 import logging
-
+import urllib
+from collections import defaultdict
+import asf_search as asf
 import time
 
 log = logging.getLogger(__name__)
