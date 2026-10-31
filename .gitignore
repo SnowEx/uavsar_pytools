@@ -27,3 +27,6 @@ var/
 # scratch analyses
 scratch/
 figures/
+
+# build artifacts
+build/

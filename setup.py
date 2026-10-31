@@ -8,7 +8,6 @@ import io
 import os
 import sys
 from shutil import rmtree
-from argon2 import extract_parameters
 
 from setuptools import find_packages, setup, Command
 
@@ -19,17 +18,18 @@ URL = 'https://github.com/SnowEx/uavsar_pytools'
 EMAIL = 'zachkeskinen@gmail.com'
 AUTHOR = 'Zach Keskinen and Jack Tarricone'
 REQUIRES_PYTHON = '>=3.7.0'
-VERSION = '0.7.1'
+VERSION = '0.8.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
     'requests',
-    'asf_search',
-    'progressbar',
+    'asf_search>=14.1',
     'tqdm',
-    'folium',
     'geopandas',
     'numpy',
+    'pandas',
+    'pytz',
+    'pyproj',
     'rasterio',
     'matplotlib',
     'rioxarray',

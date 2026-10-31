@@ -88,3 +88,73 @@ class TestCalcIncAngle(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestInputHandling(unittest.TestCase):
+    """Nodata, file inputs and pixel spacing."""
+
+    def _write_tif(self, fp, arr, crs, res, nodata=None):
+        import rasterio as rio
+        from rasterio.transform import from_origin
+        with rio.open(fp, 'w', driver='GTiff', height=arr.shape[0], width=arr.shape[1],
+                      count=1, dtype='float32', crs=crs, nodata=nodata,
+                      transform=from_origin(500000.0, 4500000.0, res, res)) as dst:
+            dst.write(arr.astype('float32'), 1)
+
+    def test_nodata_hole_is_nan(self):
+        import os, tempfile
+        dem = np.full((20, 20), 1000.0)
+        dem[10, 10] = -9999.0
+        e, n, u = look_vectors(45.0, az_deg=90.0, shape=dem.shape)
+        with tempfile.TemporaryDirectory() as d:
+            fp = os.path.join(d, 'dem.tif')
+            self._write_tif(fp, dem, 'EPSG:32611', 5.0, nodata=-9999.0)
+            inc = calc_inc_angle(fp, e, n, u)
+        # The hole and its four gradient neighbours are NaN, everything else is flat ground
+        for r, c in [(10, 10), (9, 10), (11, 10), (10, 9), (10, 11)]:
+            self.assertTrue(np.isnan(inc[r, c]))
+        rest = np.ones_like(inc, dtype=bool)
+        rest[9:12, 9:12] = False
+        np.testing.assert_allclose(inc[rest], 45.0, atol=1e-6)
+
+    def test_spacing_from_file_not_argument(self):
+        import os, tempfile
+        from pathlib import Path
+        zx = -np.tan(np.radians(20.0))
+        dem = plane_dem(zx=zx, zy=0.0)
+        e, n, u = look_vectors(45.0, az_deg=90.0, shape=dem.shape)
+        with tempfile.TemporaryDirectory() as d:
+            fp = os.path.join(d, 'dem.tif')
+            self._write_tif(fp, dem, 'EPSG:32611', PIX)
+            # A wrong pixel_size must be ignored for file inputs, and Path must work
+            inc = calc_inc_angle(Path(fp), e, n, u, pixel_size=1.0)
+        np.testing.assert_allclose(interior(inc), 25.0, atol=1e-4)
+
+    def test_geographic_crs_rejected(self):
+        import os, tempfile
+        dem = np.zeros((N, N))
+        e, n, u = look_vectors(45.0, az_deg=90.0, shape=dem.shape)
+        with tempfile.TemporaryDirectory() as d:
+            fp = os.path.join(d, 'dem.tif')
+            self._write_tif(fp, dem, 'EPSG:4326', 0.00005556)
+            with self.assertRaises(ValueError):
+                calc_inc_angle(fp, e, n, u)
+
+    def test_rectangular_pixels(self):
+        row_spacing, col_spacing = 10.0, 5.0
+        zx = -np.tan(np.radians(20.0))
+        cols, rows = np.meshgrid(np.arange(N) * col_spacing, np.arange(N) * row_spacing)
+        dem = zx * cols
+        e, n, u = look_vectors(45.0, az_deg=90.0, shape=dem.shape)
+        inc = calc_inc_angle(dem, e, n, u, pixel_size=(row_spacing, col_spacing))
+        np.testing.assert_allclose(interior(inc), 25.0, atol=1e-6)
+
+    def test_file_lkv_shape_mismatch_raises(self):
+        import os, tempfile
+        dem = np.zeros((N, N))
+        e, n, u = look_vectors(45.0, az_deg=90.0, shape=(N, N + 1))
+        with tempfile.TemporaryDirectory() as d:
+            fp = os.path.join(d, 'e.tif')
+            self._write_tif(fp, e, 'EPSG:32611', PIX)
+            with self.assertRaises(AssertionError):
+                calc_inc_angle(dem, fp, n, u, PIX)

@@ -9,6 +9,7 @@ from collections import defaultdict
 
 # Import the native download function from the repo
 from uavsar_pytools.download.download import stream_download
+from uavsar_pytools.campaigns import CAMPAIGNS
 
 # Initialize the logger
 log = logging.getLogger(__name__)
@@ -69,22 +70,7 @@ def get_uavsar_slcs(
     """
     links = defaultdict(list)
 
-    campaigns = { # SnowEx campaigns and abbreviations
-        'grmesa': 'Grand Mesa, CO',
-        'lowman': 'Lowman, CO',
-        'fraser': 'Fraser, CO',
-        'irnton': 'Ironton, CO',                    # Senator Beck Basin
-        'peeler': 'Peeler Peak, CO',                # East River
-        'rockmt': 'Rocky Mountains NP, CO',         # Cameron Pass
-        'silver': 'Silver City, ID',                # Reynolds Creek
-        'uticam': 'Utica, MT',                      # Central Ag Research Center
-        'stlake': 'Salt Lake City, UT',             # Little Cottonwood Canyon
-        'alamos': 'Los Alamos, NM',                 # Jemez River
-        'dorado': 'Eldorado National Forest, CA',   # American River Basin
-        'donner': 'Donner Memorial State Park, CA', # Sagehen Creek
-        'sierra': 'Sierra National Forest, CA'      # Lakes Basin
-    }
-
+    campaigns = CAMPAIGNS
     if flight_name not in campaigns.values():
         try: 
             flight_abbr = flight_name 
@@ -132,10 +118,9 @@ def get_uavsar_slcs(
         # append filenames to the list of urls to download 
         for p in pol: 
             urls = []
+            f1_base = f"{site}_{flight_line}_{flight1_id}_{date1}_{band}{p}_{v}_[BC/BU]"
             for s in seg: 
                 for pxl in pxlsp:
-                    f1_base = f"{site}_{flight_line}_{flight1_id}_{date1}_{band}{p}_{v}_[BC/BU]"
-
                     urls.append(f"{f1_base}_{s}_{pxl}.slc")
 
                     # this will cause some repeats, since there is only one per seg
@@ -180,13 +165,14 @@ def download_uavsar_slcs(files: list, out_dir: str):
     def is_html(link):
         try:
             # stream=true fetches the headers without downloading the whole file
-            response = requests.get(link, stream=True)
+            response = requests.get(link, stream=True, timeout=30)
             content_type = response.headers.get('Content-Type', '')
             response.close()
             return 'text/html' in content_type
         except requests.RequestException as e:
+            # A failed request is not a usable link, so report it as one to skip
             log.error(f"Failed to check link {link}: {e}")
-            return False
+            return True
 
     BASE_URL = 'https://downloaduav2.jpl.nasa.gov'
     releases = np.arange(15, 55)[::-1]  
@@ -236,6 +222,7 @@ def download_uavsar_slcs(files: list, out_dir: str):
         return
 
     # download files
+    os.makedirs(out_dir, exist_ok=True)
     for f in files:
         f = f.replace('[BC/BU]', tag)
         link = f'{BASE_URL}/{release_folder}/{flight_folder}/{f}'
@@ -252,4 +239,4 @@ def download_uavsar_slcs(files: list, out_dir: str):
             continue
             
         log.info(f"Downloading {f} to {out_dir}...")
-        stream_download(link, f"{out_dir}/{f}")
+        stream_download(link, filename)

@@ -1,3 +1,4 @@
+import os
 import requests
 import unittest
 from unittest import mock
@@ -8,9 +9,6 @@ import tempfile
 
 import uavsar_pytools
 
-# appending a path
-sys.path.append('/Users/zachkeskinen/Documents/uavsar_pytools/')
-
 from uavsar_pytools import UavsarImage, uavsar_image
 
 def connected_to_internet(url='http://www.google.com/', timeout=5):
@@ -18,7 +16,7 @@ def connected_to_internet(url='http://www.google.com/', timeout=5):
     try:
         _ = requests.head(url, timeout=timeout)
         return True
-    except requests.ConnectionError:
+    except requests.RequestException:
         pass
         # print("No internet connection available.")
     return False
@@ -43,9 +41,7 @@ class TestImage(unittest.TestCase):
             self.assertIsNotNone(self.image.debug)
             self.assertIsNotNone(self.image.clean)
         
-        internet = connected_to_internet()
-
-        @unittest.skipIf(internet == False, "No Internet Connection")
+        @unittest.skipUnless(os.environ.get('UAVSAR_NETWORK_TESTS'), 'Set UAVSAR_NETWORK_TESTS=1 to run download tests')
         def test_image_download(self):
             self.image.download()
             self.assertIsNotNone(self.image.binary_fp)
@@ -54,9 +50,24 @@ class TestImage(unittest.TestCase):
             self.assertTrue(exists(self.image.binary_fp))
     
     def test_convert(self):
-        
-
+        self.skipTest('Conversion test needs a downloaded binary image.')
 
 
 if __name__ == '__main__':
     unittest.main()
+
+def test_show_complex_array(tmp_path, monkeypatch):
+    """show() plots magnitude for complex products instead of raising."""
+    import numpy as np
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    shown = []
+    monkeypatch.setattr(plt, 'show', lambda: shown.append(True))
+    image = UavsarImage(work_dir=str(tmp_path), url='https://example.org/a_L090HH_01.int.grd')
+    image.arr = np.exp(1j * np.linspace(0, 6, 16)).reshape(4, 4).astype(np.complex64)
+    image.show()
+    image.arr = None
+    image.show()
+    assert len(shown) == 1
+    plt.close('all')

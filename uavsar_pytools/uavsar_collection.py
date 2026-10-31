@@ -1,49 +1,60 @@
 import os
-from os.path import basename, join, expanduser
-from glob import glob
-import shutil
+import re
+from os.path import join, expanduser
 import logging
 import asf_search as asf
 import pandas as pd
-from random import choice
 
 from uavsar_pytools.uavsar_scene import UavsarScene
-from uavsar_pytools.uavsar_image import UavsarImage
+from uavsar_pytools.campaigns import site_code
 
 log = logging.getLogger(__name__)
-logging.basicConfig()
-log.setLevel(logging.DEBUG)
+
+# ASF processing levels for UAVSAR since the 2026 catalogue change, keyed by the
+# names this class has always accepted as img_type
+PROCESSING_LEVELS = {
+    'INTERFEROMETRY_GRD': 'RPI',
+    'RPI': 'RPI',
+    'PROJECTED': 'POLSAR',
+    'POLSAR': 'POLSAR',
+}
 
 class UavsarCollection():
     """
     Class to handle uavsar collections containing many different image pairs. Methods include downloading and converting images.
 
+    ASF now serves UAVSAR as one granule per scene with a url for every file
+    rather than a zip. This class finds the scenes by site code (the first field of
+    the scene name, e.g. 'lowman') or by a geometry, downloads the ground projected
+    files for the requested polarizations and converts them to GeoTiffs.
+
     Args:
-        collection (str): name of collection. Found at: https://api.daac.asf.alaska.edu/services/utils/mission_list
+        collection (str): campaign name from the SnowEx list (e.g. 'Lowman, CO') or the
+            UAVSAR site code that starts the scene names (e.g. 'lowman'). Ignored if
+            geometry is given.
         work_dir (str): directory to download images into
-        img_type (str): type of images to search for. [Default = INTERFEROMETRY_GRD]
-        overwrite (bool): Do you want to overwrite pre-existing files [Default = False]
-        clean (bool): Do you want to erase binary files after completion [Default = False]
-        debug (str): level of logging (not yet implemented)
-        pols (list): Do you want only certain polarizations? [Default = all available]
+        img_type (str): 'INTERFEROMETRY_GRD' (alias 'RPI') for repeat pass interferometry
+            or 'PROJECTED' (alias 'POLSAR') for polarimetric products. [Default = INTERFEROMETRY_GRD]
+        clean (bool): Do you want to erase binary files after completion [Default = True]
+        pols (list): Only certain polarizations, e.g. ['HH', 'HV']. For polsar products
+            the six cross products whose halves are both in the list are kept. [Default = all]
         dates (list): List of 1: start date and 2: end date to constrain collection results.
-        low_ram (bool): decimates by a factor of 100 the arrays to conserve memory. [Default = True]
-        inc (bool): download incidence angle as well? [Default = False]
+        low_ram (bool): do not keep the converted arrays in memory. [Default = True]
+        inc (bool): also download the .inc incidence angle file (polsar only). [Default = False]
+        geometry (str): WKT geometry to search by instead of a site code, e.g. 'POINT(-115.6 44.1)'.
 
     Methods:
-        collection_to_tiffs(): Main method. Finds all Uavsar Images in the collection and downloads, converts them to GeoTiffs.
-        find_urls() Finds all urls and returns thems as .results to the object. Each .result has a .properties property it inherits from asf_search.
-
-    img_types can be found at https://github.com/asfadmin/Discovery-asf_search/blob/master/asf_search/constants/PRODUCT_TYPE.py.
-    A few of the most common are:
-    - INTERFEROMETRY_GRD - ground projected interferograms (default)
-    - AMPLITUDE_GRD - ground projected amplitude images
-    - PROJECTED - ground projected polsar images
+        collection_to_tiffs(): Main method. Finds all Uavsar scenes in the collection and downloads, converts them to GeoTiffs.
+        find_urls() Finds all scenes and returns them as .results. Each .result has a .properties property it inherits from asf_search.
     """
 
-    def __init__(self, collection ,work_dir = '~', overwrite = False, clean = True, \
-    debug = False, pols = None, dates = None, low_ram = True, inc = False, img_type = 'INTERFEROMETRY_GRD'):
+    def __init__(self, collection = None, work_dir = '~', overwrite = False, clean = True, \
+    debug = False, pols = None, dates = None, low_ram = True, inc = False, img_type = 'INTERFEROMETRY_GRD',
+    geometry = None):
+        assert collection or geometry, 'Provide a collection name, site code or geometry.'
         self.collection = collection
+        self.site = site_code(collection) if collection else None
+        self.geometry = geometry
         self.work_dir = expanduser(work_dir)
         self.overwrite = overwrite
         self.clean = clean
@@ -51,7 +62,10 @@ class UavsarCollection():
         self.pols = pols
         self.low_ram = low_ram
         self.inc = inc
+        if img_type not in PROCESSING_LEVELS:
+            raise ValueError(f'img_type must be one of {list(PROCESSING_LEVELS)}')
         self.img_type = img_type
+        self.level = PROCESSING_LEVELS[img_type]
         if pols:
             pols = [pol.upper() for pol in pols]
             if set(pols).issubset(['VV','VH','HV','HH']):
@@ -60,49 +74,66 @@ class UavsarCollection():
                 raise ValueError('Bad Polarization Provided.')
         self.dates = dates
         if dates:
-            # define search parameters for sierra flight line
             self.start_date = pd.to_datetime(dates[0])
             self.end_date = pd.to_datetime(dates[1])
+        self.results = []
 
     def find_urls(self):
-        # search for data
-        if self.dates:
-            self.results = asf.search(platform = 'UAVSAR',
-                        processingLevel = ([self.img_type]),
-                        campaign = self.collection,
-                        start = self.start_date,
-                        end = self.end_date)
+        """Search ASF for scenes of this site (or geometry), processing level and dates."""
+        opts = dict(platform = 'UAVSAR', processingLevel = [self.level], maxResults = 5000)
+        if self.geometry:
+            opts['intersectsWith'] = self.geometry
         else:
-            self.results = asf.search(platform = 'UAVSAR',
-                        processingLevel = ([self.img_type]),
-                        campaign = self.collection)
-        log.info(f'Found {len(self.results)} image pairs')
+            # Scene names start with the site code, and ASF supports a trailing wildcard
+            opts['granule_list'] = [f'{self.site}_*']
+        if self.dates:
+            opts['start'] = self.start_date
+            opts['end'] = self.end_date
+        self.results = asf.search(**opts)
+        log.info(f'Found {len(self.results)} scenes')
+
+    def _keep_file(self, name):
+        """Whether a file of a scene should be downloaded: ground projected products,
+        the annotation file, optionally the incidence angle, filtered by polarization."""
+        if name.endswith('.inc'):
+            return self.inc
+        if not (name.endswith('.grd') or name.endswith('.ann')):
+            return False
+        if not self.pols:
+            return True
+        # RPI scenes carry one identical .ann per polarization; keep only the requested ones
+        match = re.search(r'L\d{3}([HV]{2,4})(?=[_.])', name)
+        if not match:
+            return True
+        pol = match.group(1)
+        # Two character field (RPI) must be requested; four character (polsar) needs both halves
+        halves = [pol[:2], pol[2:]] if len(pol) == 4 else [pol]
+        return all(h in self.pols for h in halves)
+
+    def scene_urls(self, result):
+        """File urls to download for one search result."""
+        urls = []
+        for entry in result.umm.get('RelatedUrls', []):
+            if entry.get('Type') not in ('GET DATA', 'EXTENDED METADATA'):
+                continue
+            url = entry['URL']
+            # Skip the s3:// duplicates ASF lists next to the https urls
+            if not url.startswith('http'):
+                continue
+            if url not in urls and self._keep_file(url.split('/')[-1]):
+                urls.append(url)
+        return urls
 
     def results_to_tiffs(self):
         for result in self.results:
             prop = result.properties
-            url = prop['url']
-            log.info(f'Starting on: {url}')
-            scene = UavsarScene(url = url, work_dir= self.work_dir, pols = self.pols, clean = self.clean, low_ram=self.low_ram)
-            scene.url_to_tiffs()
-            if 'INTERFEROMETRY' in self.img_type:
-                d1 = choice(list(scene.images.values()))['description']['start time of acquisition for pass 1']['value']
-                d2 = choice(list(scene.images.values()))['description']['start time of acquisition for pass 2']['value']
-                log.info(f'Completed {d1} to {d2}')
-            elif self.img_type == 'PROJECTED':
-                d = choice(list(scene.images.values()))['description']['date of acquisition']['value']
-                log.info(f'Completed {d}')
-            if self.inc:
-                inc_res = asf.search(platform = 'UAVSAR',
-                        processingLevel = (['INC']),
-                        campaign = self.collection,
-                        # frame= int(prop['frameNumber']),
-                        relativeOrbit= int(prop['pathNumber']),
-                        start= prop['startTime'],
-                        end = prop['stopTime'])[0]
-                url_dir = join(self.work_dir, basename(url).split('.')[0])
-                inc_img = UavsarImage(inc_res.properties['url'], join(self.work_dir, url_dir), clean = True)
-                inc_img.url_to_tiff()                
+            name = prop['sceneName']
+            urls = self.scene_urls(result)
+            log.info(f'Starting on {name}: {len(urls)} files')
+            scene = UavsarScene(url = urls[0], work_dir = self.work_dir, pols = self.pols,
+                                clean = self.clean, low_ram = self.low_ram, scene_name = name)
+            scene.files_to_tiffs(urls)
+            log.info(f"Completed {name} ({prop.get('startTime')} to {prop.get('stopTime')})")
 
     def collection_to_tiffs(self):
         self.find_urls()
