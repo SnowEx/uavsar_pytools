@@ -18,7 +18,7 @@ URL = 'https://github.com/SnowEx/uavsar_pytools'
 EMAIL = 'zachkeskinen@gmail.com'
 AUTHOR = 'Zach Keskinen and Jack Tarricone'
 REQUIRES_PYTHON = '>=3.7.0'
-VERSION = '0.8.0'
+VERSION = '0.9.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
@@ -115,7 +115,7 @@ setup(
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     url=URL,
-    packages=find_packages(exclude=["tests/*"]),
+    packages=find_packages(exclude=["tests", "tests.*"]),
     # If your package is a single module, use this instead of 'packages':
     # py_modules=['mypackage'],
 

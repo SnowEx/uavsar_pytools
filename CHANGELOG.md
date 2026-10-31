@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.8.0 (unreleased)
+## 0.9.0 (unreleased)
 
 Results change for every user of `calc_inc_angle` and for anyone with look vector
 tifs from an earlier release. Read the first two items before upgrading.
@@ -67,3 +67,4 @@ tifs from an earlier release. Read the first two items before upgrading.
   unused `progressbar` and `folium` dropped.
 - Importing the package no longer configures the root logger.
 - Stale `build/` tree untracked.
+- The wheel no longer installs the `tests` package into site-packages.
