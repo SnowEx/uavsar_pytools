@@ -76,6 +76,9 @@ class UavsarCollection():
         if dates:
             self.start_date = pd.to_datetime(dates[0])
             self.end_date = pd.to_datetime(dates[1])
+            # A bare end date means the whole of that day, not midnight at its start
+            if self.end_date == self.end_date.normalize():
+                self.end_date = self.end_date + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
         self.results = []
 
     def find_urls(self):

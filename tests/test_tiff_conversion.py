@@ -90,3 +90,18 @@ def test_big_endian_annotation(tmp_path):
     z.tofile(hgt)
     _, arr, _, _ = grd_tiff_convert(str(hgt), str(tmp_path), ann_fp=str(ann), overwrite=True)
     np.testing.assert_allclose(arr, np.arange(1, 21).reshape(4, 5))
+
+
+def test_read_annotation_scientific_notation(tmp_path):
+    ann = tmp_path / 'a.ann'
+    ann.write_text('grd_pwr.row_mult (deg/pixel) = -5.556e-05 ; G\n'
+                   'grd_pwr.set_rows (pixels) = 16418 ; G\n'
+                   'grd_pwr.row_addr (deg) = 44.48811432 ; C\n'
+                   'Flight ID for Pass 1 (&) = 21021 ; F\n'
+                   'Processor Version (&) = v2.1.3 ; F\n')
+    d = read_annotation(str(ann))
+    assert d['grd_pwr.row_mult']['value'] == -5.556e-05
+    assert d['grd_pwr.set_rows']['value'] == 16418
+    assert d['grd_pwr.row_addr']['value'] == 44.48811432
+    assert d['flight id for pass 1']['value'] == 21021
+    assert d['processor version']['value'] == 'v2.1.3'

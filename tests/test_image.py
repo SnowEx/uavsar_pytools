@@ -26,7 +26,7 @@ class TestImage(unittest.TestCase):
     The basic class that inherits unittest.TestCase
     """
     with tempfile.TemporaryDirectory() as tmpdirname:
-        test_url = 'https://unzip.asf.alaska.edu/INTERFEROMETRY_GRD/UA/alamos_35915_20005-003_20008-000_0007d_s01_L090_01_int_grd.zip/alamos_35915_20005-003_20008-000_0007d_s01_L090HH_01.cor.grd'
+        test_url = 'https://cumulus.asf.earthdatacloud.nasa.gov/PRODUCTS/UAVSAR/UAVSAR_RPI/lowman_05208_21019-019_21021-007_0006d_s01_L090_01/lowman_05208_21019-019_21021-007_0006d_s01_L090HH_01.cor.grd'
         image = UavsarImage(work_dir= tmpdirname, url = test_url)  # instantiate the Class
 
         # test case function to check the Person.set_name function

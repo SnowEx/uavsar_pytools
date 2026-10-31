@@ -103,12 +103,14 @@ def read_annotation(ann_file):
 
             value = value.strip()
 
-            # Cast the values that can be to numbers ###
-            if value.strip('-').replace('.', '').isnumeric():
-                if '.' in value:
+            # Cast the values that can be to numbers, including scientific notation like 5.556e-05
+            try:
+                value = int(value)
+            except ValueError:
+                try:
                     value = float(value)
-                else:
-                    value = int(value)
+                except ValueError:
+                    pass
 
             # Assign each entry as a dictionary with value and units
             data[key] = {'value': value, 'units': units, 'comment': comment}

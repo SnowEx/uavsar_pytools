@@ -79,3 +79,13 @@ def test_collection_to_tiffs_searches_then_converts(monkeypatch):
     monkeypatch.setattr(col, 'results_to_tiffs', lambda: calls.append('results_to_tiffs'))
     col.collection_to_tiffs()
     assert calls == ['find_urls', 'results_to_tiffs']
+
+
+def test_end_date_covers_whole_day():
+    import pandas as pd
+    col = UavsarCollection('lowman', dates=('2021-03-22', '2021-03-22'))
+    assert col.start_date == pd.Timestamp('2021-03-22')
+    assert col.end_date == pd.Timestamp('2021-03-22 23:59:59')
+    # An explicit time is kept as given
+    col = UavsarCollection('lowman', dates=('2021-03-22', '2021-03-22 12:00'))
+    assert col.end_date == pd.Timestamp('2021-03-22 12:00')

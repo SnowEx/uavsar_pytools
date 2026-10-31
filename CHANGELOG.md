@@ -30,6 +30,8 @@ tifs from an earlier release. Read the first two items before upgrading.
 - `.hgt` and `.slope` keep zero as a valid value. Only -10000 is fill.
 - `.inc` files use the `hgt` grid description from the annotation file.
 - Binary byte order is read from the annotation file.
+- `read_annotation` parses values in scientific notation, such as the 5.556e-05
+  degree pixel spacing, as numbers instead of strings.
 - Acquisition times for InSAR pairs are parsed to datetimes again (key typo).
 - `unzip` matches polarizations as whole tokens and always extracts `.ann` files.
 
@@ -50,13 +52,23 @@ tifs from an earlier release. Read the first two items before upgrading.
   projected files for the requested polarizations and converts them. The campaign
   filter no longer exists at ASF. Requires `asf_search >= 14.1`.
 - `UavsarScene.files_to_tiffs(urls)` handles a scene given as a file list.
+- A bare end date in `UavsarCollection(dates=...)` now covers that whole day. It used
+  to end at midnight at the start of the day, so single day windows found nothing.
 - `get_polsar_stack` memory maps the GRD files so a `bounds` window can be read
   without loading whole scenes.
 - `environment.yml` now lists every runtime dependency including GDAL.
 
 ### Download and classes
 - `download_image` returns a tuple when `ann=False`.
-- `download_uavsar_slcs` creates the output directory and times out stalled requests.
+- `get_uavsar_slcs` found nothing under asf_search 14: it filtered on campaign and
+  beam mode, which the new ASF collections do not carry. It now searches by site
+  code and processing level, takes the flight line from the scene name, resolves
+  the JPL release folder and BC/BU tag itself, and returns download ready urls
+  keyed by flight line (issue #52). A version JPL does not have raises `ValueError`
+  and an unreachable JPL host raises `ConnectionError` instead of probing for
+  forty minutes. `download_uavsar_slcs` takes those urls, creates the output
+  directory and skips files already present. Not run against JPL for this
+  release: the download host was offline.
 - `UavsarScene` removes only its own temp directory on clean, not `<work_dir>/tmp`.
 - `UavsarImage` removes only its own binary and annotation files on clean.
 - `UavsarImage.show` works for real and complex arrays.

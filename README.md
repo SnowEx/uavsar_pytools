@@ -85,13 +85,27 @@ collection.collection_to_tiffs()
 
 Each scene found will be placed in its own directory named after the scene. The downloaded binary files are deleted after conversion to tiffs to save space unless `clean = False`.
 
-`UavsarCollection` by default searches for repeat pass interferograms (`img_type = 'INTERFEROMETRY_GRD'`). For polarimetric products use `img_type = 'PROJECTED'`; add `inc = True` to also fetch the incidence angle file. Requires `asf_search >= 14.1`, which knows the current ASF UAVSAR collections.
+`UavsarCollection` by default searches for repeat pass interferograms (`img_type = 'INTERFEROMETRY_GRD'`). For polarimetric products use `img_type = 'PROJECTED'`; add `inc = True` to also fetch the incidence angle file (ASF serves `.inc`, `.slope` and `.hgt` only for polarimetric scenes; interferometric scenes have no incidence angle file there). Requires `asf_search >= 14.1`, which knows the current ASF UAVSAR collections.
 
 ### Finding URLs for your images
 
 The provided jupyter notebook tutorial in the notebooks folder will walk you through generating a bounding box for your area of interest and finding urls through the [asf_search api](https://github.com/asfadmin/Discovery-asf_search). However if you want a GUI you can also use the [vertex website](https://search.asf.alaska.edu/). After drawing a box and selecting UAVSAR from the platform selection pane (circled in red below) you will get a list of search results. Click on the ground projected image you want to download and right click on the download link (circled in orange below). Select ```copy link``` and you will have copied your relevant zip url.
 
 <img src="https://github.com/SnowEx/uavsar_pytools/blob/main/vertex_example.png">
+
+### Downloading SLC stacks from JPL
+
+ASF does not serve single look complex (SLC) stacks. `get_uavsar_slcs` finds the flights for a site and date range in the ASF catalogue, then locates the stack on the JPL data portal and returns download ready urls for each flight line. `download_uavsar_slcs` fetches them. Both need `uavsar.jpl.nasa.gov` to be reachable.
+
+```
+from uavsar_pytools.download.download_slcs import get_uavsar_slcs, download_uavsar_slcs
+# urls keyed by flight line, e.g. {'lowman_05208': [...], 'lowman_23205': [...]}
+urls = get_uavsar_slcs('Lowman, CO', start_date='2021-03-01', end_date='2021-03-31',
+                       pol=['HH'], seg=['s1'], pxlsp=['2x8'], getann=True, getllh=True, getlkv=True)
+download_uavsar_slcs(urls['lowman_05208'], out_dir='/directory/for/slcs')
+```
+
+`flight_num='05208'` keeps a single flight line and `version=2` selects a reprocessed stack. A version that JPL does not have raises a `ValueError`.
 
 ### Georeferencing SLC images to Ground Range
 
