@@ -116,10 +116,10 @@ The incidence angle file provided with the uavsar images is generated using the 
 
 ```
 from uavsar_pytools.incidence_angle import calc_inc_angle
-dem = numpy array or .tif file path of dem resampled to match uavsar.
-lkv_x = numpy array or .tif file path of x component of look vector file (.lkv)
-lkv_y = numpy array or .tif file path of y component of look vector file (.lkv)
-lkv_z = numpy array or .tif file path of z component of look vector file (.lkv)
+dem = numpy array or .tif file path of dem on a projected (meters) north-up grid, resampled to match uavsar.
+lkv_x = numpy array or .tif file path of east component of look vector file (.lkv.x.tif)
+lkv_y = numpy array or .tif file path of north component of look vector file (.lkv.y.tif)
+lkv_z = numpy array or .tif file path of up component of look vector file (.lkv.z.tif)
 inc_array = calc_inc_angle(dem, lkv_x, lkv_y, lkv_z)
 ```
 
