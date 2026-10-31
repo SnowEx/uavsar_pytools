@@ -178,10 +178,12 @@ def geolocate_uavsar(in_fp, ann_fp, out_dir, llh_fp):
         nrows, ncols = t_rows, t_cols
         dtype = np.dtype('<f')
         arr = np.fromfile(in_fp, dtype = dtype)
+        # JPL .lkv is interleaved (east, north, up), sensor to ground.
+        # Name them x = east, y = north, z = up to match calc_inc_angle.
         d_arrs = {}
-        d_arrs[f'y'] = arr[::3].reshape(nrows, ncols)
-        d_arrs[f'x'] = arr[1::3].reshape(nrows, ncols)
-        d_arrs[f'z'] = arr[2::3].reshape(nrows, ncols)
+        d_arrs['x'] = arr[::3].reshape(nrows, ncols)
+        d_arrs['y'] = arr[1::3].reshape(nrows, ncols)
+        d_arrs['z'] = arr[2::3].reshape(nrows, ncols)
 
     elif ext == 'vrt':
         nrows, ncols = t_rows, t_cols

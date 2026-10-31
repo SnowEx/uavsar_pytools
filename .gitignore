@@ -23,3 +23,7 @@ var/
 *.egg
 /play
 *__pycache__
+
+# scratch analyses
+scratch/
+figures/
