@@ -1,5 +1,5 @@
 [![DOI](https://zenodo.org/badge/452858293.svg)](https://zenodo.org/badge/latestdoi/452858293)
-![version](https://img.shields.io/badge/version-0.7.0-green)
+![version](https://img.shields.io/badge/version-0.9.0-green)
 
 # uavsar_pytools
 
@@ -60,12 +60,12 @@ For quick checks to visualize the data there is also a convenience method `scene
 
 ### Downloading whole collections
 
-Uavsar_pytools can now take a collection name and a start and end date and find, download, and process an entire collection of uavsar images. Collection names can be found at [campaign list](https://api.daac.asf.alaska.edu/services/utils/mission_list). Once you know your campaign name and the date range you can give the package a working directory along with the name and dates and it will do the rest. For example if you want to download all uavsar images for Grand Mesa, Colorado from November 2019 to April 2020 and wanted to save it to your documents folder you would use:
+Uavsar_pytools can take a site name and a start and end date and find, download, and process every UAVSAR scene for that site. ASF serves UAVSAR as one granule per scene with a url for each file, under two products: repeat pass interferometry (`RPI`) and polarimetry (`POLSAR`). Give the SnowEx campaign name (`'Lowman, CO'`), the site code that starts the scene names (`'lowman'`), or a WKT geometry, along with a working directory, and the package does the rest. For example, to download all repeat pass interferograms for Grand Mesa, Colorado from November 2019 to April 2020 into your documents folder:
 
 ```python
 from uavsar_pytools import UavsarCollection
 
-## Collection name from the campaign list
+## Campaign name or site code
 col_name = 'Grand Mesa, CO'
 
 ## Working directory to save files into
@@ -76,16 +76,16 @@ dates = ('2019-11-01','2020-04-01')
 
 collection = UavsarCollection(collection = col_name, work_dir = work_d, dates = dates)
 
-# Optional keywords: to keep binary files use `clean = False`, to download incidence angles 
-# with each image use `inc = True`, for only certain pols use `pols = ['VV','HV']`.
-# See docstring of class for full list.
+# Optional keywords: to keep binary files use `clean = False`, for only certain pols
+# use `pols = ['VV','HV']`, to search by location instead of site use
+# `geometry = 'POINT(-108.1 39.05)'`. See docstring of class for full list.
 
 collection.collection_to_tiffs()
 ```
 
-Each image pair found will be placed in its own directory with its Alaska Satellite Facility derived name as the directory name. Unlike for UavsarScene this functionality will automatically delete the downloaded binary and zip files after converting them to tiffs to save space.
+Each scene found will be placed in its own directory named after the scene. The downloaded binary files are deleted after conversion to tiffs to save space unless `clean = False`.
 
-`UavsarCollection` be default will search only for ground projected interferograms. To search for ground projected polsar images use `img_type = 'PROJECTED'` in the instantiation of the collection.
+`UavsarCollection` by default searches for repeat pass interferograms (`img_type = 'INTERFEROMETRY_GRD'`). For polarimetric products use `img_type = 'PROJECTED'`; add `inc = True` to also fetch the incidence angle file (ASF serves `.inc`, `.slope` and `.hgt` only for polarimetric scenes; interferometric scenes have no incidence angle file there). Requires `asf_search >= 14.1`, which knows the current ASF UAVSAR collections.
 
 ### Finding URLs for your images
 
@@ -93,9 +93,23 @@ The provided jupyter notebook tutorial in the notebooks folder will walk you thr
 
 <img src="https://github.com/SnowEx/uavsar_pytools/blob/main/vertex_example.png">
 
+### Downloading SLC stacks from JPL
+
+ASF does not serve single look complex (SLC) stacks. `get_uavsar_slcs` finds the flights for a site and date range in the ASF catalogue, then locates the stack on the JPL data portal and returns download ready urls for each flight line. `download_uavsar_slcs` fetches them. Both need `uavsar.jpl.nasa.gov` to be reachable.
+
+```
+from uavsar_pytools.download.download_slcs import get_uavsar_slcs, download_uavsar_slcs
+# urls keyed by flight line, e.g. {'lowman_05208': [...], 'lowman_23205': [...]}
+urls = get_uavsar_slcs('Lowman, CO', start_date='2021-03-01', end_date='2021-03-31',
+                       pol=['HH'], seg=['s1'], pxlsp=['2x8'], getann=True, getllh=True, getlkv=True)
+download_uavsar_slcs(urls['lowman_05208'], out_dir='/directory/for/slcs')
+```
+
+`flight_num='05208'` keeps a single flight line and `version=2` selects a reprocessed stack. A version that JPL does not have raises a `ValueError`.
+
 ### Georeferencing SLC images to Ground Range
 
-Note that this will require the extra packages (GDAL) specified in the setup.py. If you need this functionality please pip install using: `pip install uavsar_pytools[extra]`.
+Note that this requires the GDAL python bindings, which are not pip installable on most systems. Create the conda environment from `environment.yml` (`mamba env create -f environment.yml`) to get them.
 
 Single look complex (SLC) uavsar images and other Uavsar images without a .grd extension may be in [radar slant range](https://earth.esa.int/eogateway/missions/ers/radar-courses/radar-course-2#:~:text=The%20distance%20between%20any%20point,ground%20directly%20underneath%20the%20radar). This means that in order to view the image in the image in it's correct location you will need to project it to a coordinate system. The `geolocate_uavsar` function takes an array of lat, long, and heights called a .llh file and projects a uavsar image from radar to ground range. The .llh file is provided with slant range images in both the asf and jpl websites.
 
@@ -130,7 +144,7 @@ This will return an incidence angle array that you can then save out to disk or 
 Polarimetric analysis of SAR images quantifies the scattering properties of objects in the scene using the phase differences between the various polarizations. A common analysis is to decompose these polarization differences into the mean alpha angle, entropy, and anisotropy. A great presentation on these terms and polarimetry is available from Carleton University [here](https://dges.carleton.ca/courses/IntroSAR/SECTION%204%20-%20Carleton%20SAR%20Training%20-%20SAR%20Polarimetry%20%20-%20Final.pdf). Uavsar_pytools provides functionality to decompose the [polsar uavsar images](https://uavsar.jpl.nasa.gov/science/documents/polsar-format.html#:~:text=UAVSAR%20data%20format%20for%20polarimetric,corresponding%20to%20the%20scattering%20matrix.) into the mean alpha, alpha 1 angle, entropy, and anisotropy.
 
 ```
-from uavsar.polsar import H_A_alpha_decomp
+from uavsar_pytools.polsar import H_A_alpha_decomp
 
 # This should point to the directory with all 6 polarization
 # (VVVV, HVHV, HVVV, HHHV, HHVV, HHHH) and the correct .ann file

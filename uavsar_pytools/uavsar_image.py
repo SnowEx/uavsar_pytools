@@ -1,13 +1,12 @@
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-import shutil
 import logging
 
 from uavsar_pytools.download.download import download_image
 from uavsar_pytools.convert.tiff_conversion import grd_tiff_convert
 
-logging.basicConfig()
+log = logging.getLogger(__name__)
 
 class UavsarImage():
     """
@@ -81,19 +80,22 @@ class UavsarImage():
             ann_fp = self.ann_fp
 
         result = grd_tiff_convert(in_fp = binary_fp, out_dir = out_dir, ann_fp = ann_fp, overwrite = overwrite)
-        if len(result) == 4:
+        # grd_tiff_convert returns None when the user declines to overwrite
+        if result is not None:
             self.desc, self.arr, self.type, self.out_fp = result
 
-        if self.clean:
-            shutil.rmtree(self.bin_dir)
+        # Only remove the binary and annotation files this image downloaded.
+        # The download directory is shared with other images in the work_dir.
+        if self.clean and self.binary_fp:
+            for fp in [self.binary_fp, self.ann_fp]:
+                if fp and os.path.exists(fp):
+                    os.remove(fp)
 
     def show(self):
         """Convenience function to check converted array."""
-        if self.arr != None:
-            if len(self.arr.dtype) == 1:
-                d = self.arr['real']
-            else:
-                d = (self.arr['real']**2 + self.arr['imaginary']**2)**0.5
+        if self.arr is not None:
+            # Complex products (e.g. interferograms) are shown as magnitude
+            d = np.abs(self.arr) if np.iscomplexobj(self.arr) else self.arr
             std_low = np.nanmedian(d) - np.nanstd(d)
             std_high = np.nanmedian(d) + np.nanstd(d)
             plt.imshow(d, vmin = std_low ,vmax = std_high)

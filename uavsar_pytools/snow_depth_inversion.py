@@ -37,7 +37,7 @@ def depth_from_phase(delta_phase, inc_angle, permittivity = None,
     delta_z : NumPy array, change in snow depth [m]
     """
     # Check for either permittivity or density
-    if permittivity == None and density == None:
+    if permittivity is None and density is None:
         raise ValueError('Please provide either permittivity or density data.')
     # Check to make sure all rasters are the same size
     for i in [inc_angle, permittivity, density]:
@@ -49,22 +49,22 @@ def depth_from_phase(delta_phase, inc_angle, permittivity = None,
     if type(permittivity) == np.ndarray:
         if 1 in permittivity or 1.0 in permittivity:
             raise ValueError('Permittivity array cannot contain values equal to 1.')
-    elif permittivity == 1:
+    elif permittivity is not None and permittivity == 1:
         raise ValueError('Permittivity cannot equal 1.')
     # Check to make sure angles are in radians and densities are reasonable
     if np.nanmean(inc_angle) > 2*np.pi:
         raise ValueError('Incidence angle must be in radians.')
 
-    if density:
+    if density is not None:
         if np.nanmean(density) < 1:
             raise ValueError('Densities must be in kg/m3.')
     # Calculate permittivity with density if perm. is not directly provided
-    if not permittivity:
+    if permittivity is None:
         print(f'No permittivity data provided -- calculating permittivity from snow density using method {method}.')
 
         if method == 'guneriussen2001':
             # Need to convert to [g cm-3] as in original paper
-            perm = 1 + 1.6 * (density/1000) + 1.8 * (density/1000)**3
+            perm = 1 + 1.5995 * (density/1000) + 1.861 * (density/1000)**3
         elif method == 'webb2021':
             # Good to use [kg m-3]
             perm = 1 + 0.0014 * density + 2e-7 * density**2
@@ -116,7 +116,7 @@ def phase_from_depth(delta_sd, inc_angle, permittivity = None,
     delta_z : NumPy array, change in snow depth [m]
     """
     # Check for either permittivity or density
-    if permittivity == None and density == None:
+    if permittivity is None and density is None:
         raise ValueError('Please provide either permittivity or density data.')
     # Check to make sure all rasters are the same size
     for i in [inc_angle, permittivity, density]:
@@ -128,22 +128,22 @@ def phase_from_depth(delta_sd, inc_angle, permittivity = None,
     if type(permittivity) == np.ndarray:
         if 1 in permittivity or 1.0 in permittivity:
             raise ValueError('Permittivity array cannot contain values equal to 1.')
-    elif permittivity == 1:
+    elif permittivity is not None and permittivity == 1:
         raise ValueError('Permittivity cannot equal 1.')
     # Check to make sure angles are in radians and densities are reasonable
     if np.nanmean(inc_angle) > 2*np.pi:
         raise ValueError('Incidence angle must be in radians.')
-    if density:
+    if density is not None:
         if np.nanmean(density) < 1:
             raise ValueError('Densities must be in kg/m3.')
 
     # Calculate permittivity with density if perm. is not directly provided
-    if not permittivity:
+    if permittivity is None:
         print(f'No permittivity data provided -- calculating permittivity from snow density using method {method}.')
 
         if method == 'guneriussen2001':
             # Need to convert to [g cm-3] as in original paper
-            perm = 1 + 1.6 * (density/1000) + 1.8 * (density/1000)**3
+            perm = 1 + 1.5995 * (density/1000) + 1.861 * (density/1000)**3
         elif method == 'webb2021':
             # Good to use [kg m-3]
             perm = 1 + 0.0014 * density + 2e-7 * density**2

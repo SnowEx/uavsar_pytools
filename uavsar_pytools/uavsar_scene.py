@@ -5,16 +5,15 @@ import numpy as np
 import pandas as pd
 import logging
 import shutil
+from glob import glob
 from random import choice
 
-from uavsar_pytools.download.download import download_zip
+from uavsar_pytools.download.download import download_zip, download_image
 from uavsar_pytools.convert.file_control import unzip
 from uavsar_pytools.convert.tiff_conversion import grd_tiff_convert
 from uavsar_pytools.uavsar_image import UavsarImage
 
 log = logging.getLogger(__name__)
-logging.basicConfig()
-log.setLevel(logging.DEBUG)
 
 class UavsarScene():
     """
@@ -36,9 +35,10 @@ class UavsarScene():
         desc (dict): description of image from annotation file.
     """
 
-    def __init__(self, url, work_dir, clean = True, debug = False, pols = None, low_ram = False):
+    def __init__(self, url, work_dir, clean = True, debug = False, pols = None, low_ram = False, scene_name = None):
         self.url = url
-        self.pair_name = basename(url).split('.')[0]
+        # Zip scenes are named after the zip; file list scenes pass the ASF scene name
+        self.pair_name = scene_name if scene_name else basename(url).split('.')[0]
         self.work_dir = os.path.expanduser(work_dir)
         self.clean = clean
         self.debug = debug
@@ -75,6 +75,29 @@ class UavsarScene():
         else:
             log.warning('UavsarScene for zip files. Using UavsarImage for single images.')
 
+    def download_files(self, urls, sub_dir = 'tmp/'):
+        """
+        Download a list of individual product files (the layout ASF serves UAVSAR in
+        since 2026, one url per binary file plus the .ann) into this scene's temp dir.
+        Args:
+            urls (list): file urls for one scene, including the .ann
+            sub_dir (str): sub-directory in working directory to download into
+        """
+        out_dir = os.path.join(self.work_dir, sub_dir, self.pair_name)
+        self.tmp_dir = out_dir
+        os.makedirs(out_dir, exist_ok=True)
+        self.binary_fps = []
+        for url in urls:
+            local, _ = download_image(url, out_dir, ann=False)
+            self.binary_fps.append(local)
+
+    def files_to_tiffs(self, urls):
+        """Download a scene's individual files and convert them to WGS84 geotiffs."""
+        self.download_files(urls)
+        self.binary_to_tiffs()
+        df = pd.DataFrame(choice(list(self.images.values()))['description'])
+        df.to_csv(join(self.out_dir, self.pair_name + '.csv'))
+
     def unzip(self, in_dir = None, sub_dir = 'bin_imgs/'):
         """
         Unpack a zipped directory.
@@ -104,21 +127,22 @@ class UavsarScene():
         """
         pols = ['VV','VH','HV','HH']
         if not binary_dir:
-            if self.binary_fps:
-                binary_dir = dirname(self.binary_fps[0])
             if not self.binary_fps:
-                Exception('No binary files or directory known')
+                raise Exception('No binary files or directory known')
+            binary_dir = dirname(self.binary_fps[0])
         else:
-            self.binary_fps = os.listdir(binary_dir)
+            # Full paths, not bare file names, so conversion works from any cwd
+            self.binary_fps = sorted(glob(join(binary_dir, '*')))
 
         out_dir = os.path.join(self.work_dir, self.pair_name)
 
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
 
+        # Per polarization annotation files, only filled when no ann_fp is given
+        ann_dic = {}
         if not ann_fp:
             ann_fps = [a for a in self.binary_fps if '.ann' in a]
-            ann_dic = {}
             for pol in pols:
                 ann_pol = [fp for fp in ann_fps if pol in fp]
                 if ann_pol:
@@ -142,8 +166,9 @@ class UavsarScene():
                 self.images[type] = {'description': desc, 'array':  array, 'out_fp':out_fp, 'type':type}
         self.out_dir = out_dir
 
-        if self.clean:
-            shutil.rmtree(dirname(self.tmp_dir))
+        # Remove only this scene's download directory, never the shared parent
+        if self.clean and self.tmp_dir and os.path.isdir(self.tmp_dir):
+            shutil.rmtree(self.tmp_dir)
 
     def url_to_tiffs(self):
         self.download()
