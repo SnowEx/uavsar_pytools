@@ -3,15 +3,20 @@ channels:
   - conda-forge
 dependencies:
   - python
-  - asf_search
-  - progressbar
+  - asf_search>=14.1
   - tqdm
   - requests
-  - folium
   - geopandas
   - numpy
+  - pandas
+  - pytz
+  - pyproj
   - rasterio
+  - rioxarray
+  - gdal
+  - dask
   - matplotlib
+  - pytest
   - pip
   - nb_conda_kernels
   - ipykernel

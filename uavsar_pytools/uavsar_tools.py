@@ -6,7 +6,6 @@ import os
 from os.path import exists, expanduser, join
 import logging
 from netrc import netrc
-from subprocess import Popen
 from getpass import getpass
 
 from uavsar_pytools.download.download import download_image, download_zip, stream_download
@@ -14,8 +13,6 @@ from uavsar_pytools.convert.tiff_conversion import grd_tiff_convert, read_annota
 from uavsar_pytools.convert.file_control import unzip
 
 log = logging.getLogger(__name__)
-logging.basicConfig()
-log.setLevel(logging.DEBUG)
 
 def create_netrc(urs = 'urs.earthdata.nasa.gov'):
     """
@@ -24,26 +21,27 @@ def create_netrc(urs = 'urs.earthdata.nasa.gov'):
     prompts = ['Enter NASA Earthdata Login Username \n(or create an account at urs.earthdata.nasa.gov): ',
            'Enter NASA Earthdata Login Password: ']
 
+    netrc_fp = join(expanduser("~"), '.netrc')
+
     try:
-        netrcDir = os.path.expanduser("~/.netrc")
-        netrc(netrcDir).authenticators(urs)[0]
+        netrc(netrc_fp).authenticators(urs)[0]
+        return
 
-    # Below, create a netrc file and prompt user for NASA Earthdata Login Username and Password
-    except FileNotFoundError:
-        homeDir = os.path.expanduser("~")
-        netrc_fp = join(homeDir,'.netrc')
-        Popen(f'touch {netrc_fp} | chmod og-rw {netrc_fp} | echo machine {urs} >> {netrc_fp}', shell=True)
-        Popen(f'echo login {getpass(prompt=prompts[0])} >> {netrc_fp}', shell=True)
-        Popen(f'echo password {getpass(prompt=prompts[1])} >> {netrc_fp}', shell=True)
-
-    # Determine OS and edit netrc file if it exists but is not set up for NASA Earthdata Login
-    except TypeError:
-        homeDir = os.path.expanduser("~")
-        netrc_fp = join(homeDir,'.netrc')
-        Popen(f'echo machine {urs} >> {netrc_fp}'.format(homeDir + os.sep, urs), shell=True)
-        Popen(f'echo login {getpass(prompt=prompts[0])} >> {netrc_fp}', shell=True)
-        Popen(f'echo password {getpass(prompt=prompts[1])} >> {netrc_fp}', shell=True)
+    # No netrc file, or one without an entry for this host: append an entry below
+    except (FileNotFoundError, TypeError):
+        pass
 
     # If permission denied t
     except PermissionError:
         log.warning('Permission error. Change permissions on netrc file.')
+        return
+
+    username = getpass(prompt=prompts[0])
+    password = getpass(prompt=prompts[1])
+
+    # Write from Python so the password never appears on a shell command line
+    # and the file is created owner-readable only.
+    fd = os.open(netrc_fp, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    with os.fdopen(fd, 'a') as f:
+        f.write(f'machine {urs}\nlogin {username}\npassword {password}\n')
+    os.chmod(netrc_fp, 0o600)

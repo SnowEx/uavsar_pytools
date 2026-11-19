@@ -5,12 +5,11 @@ File control functions for uavsar_pytools.
 from zipfile import ZipFile
 from tqdm import tqdm
 import os
+import re
 from os.path import exists, join
 
 import logging
 log = logging.getLogger(__name__)
-logging.basicConfig()
-log.setLevel(logging.DEBUG)
 
 def unzip(dir_path, out_dir, pols = None):
     """
@@ -27,11 +26,13 @@ def unzip(dir_path, out_dir, pols = None):
     with ZipFile(file=dir_path) as zip_file:
 
         if pols:
-            pol_list = [s for s in zip_file.namelist() if any(xs in s for xs in pols)]
-            checked_list = [f for f in pol_list if not exists(join(out_dir, f))]
+            # Match the polarization as a whole token after the band code (e.g. L090HH_)
+            # so HH does not match HHHV, and always keep annotation files.
+            pol_re = re.compile(r'L\d{3}(' + '|'.join(pols) + r')(?=[_.])')
+            pol_list = [s for s in zip_file.namelist() if s.endswith('.ann') or pol_re.search(s)]
         else:
             pol_list = zip_file.namelist()
-            checked_list = [f for f in pol_list if not exists(join(out_dir, f))]
+        checked_list = [f for f in pol_list if not exists(join(out_dir, f))]
 
 
         # Loop over each file

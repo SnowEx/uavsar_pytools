@@ -17,8 +17,6 @@ import asf_search as asf
 import time
 
 log = logging.getLogger(__name__)
-logging.basicConfig()
-log.setLevel(logging.WARNING)
 
 def stream_download(url, output_f):
     """
@@ -27,7 +25,7 @@ def stream_download(url, output_f):
         output_f: path to save the data to
     """
 
-    r = requests.get(url, stream=True)
+    r = requests.get(url, stream=True, timeout=60)
     if r.status_code == 200:
         # Progress bar - https://towardsdatascience.com/how-to-download-files-using-python-part-2-19b95be4cdb5
         total_size= int(r.headers.get('content-length', 0))
@@ -70,8 +68,9 @@ def download_image(url, output_dir, ann = True, ann_url = None):
     else:
         log.info(f'{local} already exists, skipping download!')
 
+    ann_local = None
     if ann:
-        if ann_url == None:
+        if ann_url is None:
             if url.split('.')[-1] == 'zip' or url.split('.')[-1] == 'ann':
                 log.info('Download already contains ann file, skipping download!')
             else:
@@ -80,7 +79,7 @@ def download_image(url, output_dir, ann = True, ann_url = None):
                 # ASF formatting - query parent directory
                 if parent.split('.')[-1] == 'zip':
                     log.debug(f'ASF url found for {url}')
-                    parent_files = requests.get(parent).json()['response']
+                    parent_files = requests.get(parent, timeout=60).json()['response']
                     ann_info = [i for i in parent_files if '.ann' in i['name']][0]
                     # assert len(ann_info) == 1, 'More than one ann file detected'
                     ann_url = ann_info['url']
@@ -106,7 +105,7 @@ def download_image(url, output_dir, ann = True, ann_url = None):
                     ann_url = url.replace(f'.{ext}', '.ann')
                     log.debug(f'Parsed annotation url: {ann_url}')
 
-                    response = requests.get(ann_url)
+                    response = requests.get(ann_url, timeout=60)
                     if response.status_code == 200:
                         log.debug('Success in parsing ann url')
                     else:
@@ -119,18 +118,14 @@ def download_image(url, output_dir, ann = True, ann_url = None):
                         stream_download(ann_url, ann_local)
                     else:
                         log.info(f'{ann_local} already exists, skipping download!')
-                    return local, ann_local
                 else:
                     log.warning('No ann url found. Manually provide .ann url.')
-                    ann_url = None
-                    ann_local = None
         else:
             ann_local = join(output_dir, basename(ann_url))
             if not isfile(ann_local):
                 stream_download(ann_url, ann_local)
-            return local, ann_local
 
-        return local, None
+    return local, ann_local
 
 def download_zip(url, output_dir):
     """

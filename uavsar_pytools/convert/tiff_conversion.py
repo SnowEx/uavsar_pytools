@@ -5,8 +5,6 @@ Improved functions convert polsar, insar, and other associated UAVSAR files from
 import os
 from os.path import isdir, exists, basename, dirname, join, isfile
 from glob import glob
-from re import L
-from matplotlib.pyplot import polar
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
@@ -18,7 +16,6 @@ from pyproj import Geod, Proj
 import logging
 
 log = logging.getLogger(__name__)
-logging.basicConfig()
 
 def get_encapsulated(str_line, encapsulator):
     """
@@ -106,18 +103,20 @@ def read_annotation(ann_file):
 
             value = value.strip()
 
-            # Cast the values that can be to numbers ###
-            if value.strip('-').replace('.', '').isnumeric():
-                if '.' in value:
+            # Cast the values that can be to numbers, including scientific notation like 5.556e-05
+            try:
+                value = int(value)
+            except ValueError:
+                try:
                     value = float(value)
-                else:
-                    value = int(value)
+                except ValueError:
+                    pass
 
             # Assign each entry as a dictionary with value and units
             data[key] = {'value': value, 'units': units, 'comment': comment}
 
     # Convert times to datetimes
-    if 'start time of acquistion for pass 1' in data.keys():
+    if 'start time of acquisition for pass 1' in data.keys():
         for pass_num in ['1', '2']:
             for timing in ['start', 'stop']:
                 key = f'{timing} time of acquisition for pass {pass_num}'
@@ -251,9 +250,8 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user', debug = 
                     else:
                         search = 'slt'
         else:
-            if type == 'inc':
-                search = 'hgt'
-            search = type
+            # Incidence angle files share the height grid description
+            search = 'hgt' if type == 'inc' else type
 
         log.debug(f'Searching with: {search}')
 
@@ -273,7 +271,8 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user', debug = 
             lon1 = desc[f'{search}.col_addr']['value']
             log.debug(f'Ref Latitude: {lat1}, Longitude: {lon1} degrees')
 
-            # Lat1/lon1 are already the center so for geotiff were good to go.
+            # The annotation lat/lon is treated as the upper left corner of the
+            # upper left pixel (GDAL pixel-is-area convention).
             t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
 
             # Build the transform and CRS
@@ -283,6 +282,7 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user', debug = 
         bytes = desc[f'{search}.val_size']['value']
         endian = desc['val_endi']['value']
         log.debug(f'Bytes = {bytes}, Endian = {endian}')
+        byte_order = '>' if 'BIG' in str(endian).upper() else '<'
 
         # Set up datatypes
         com_des = desc[f'{search}.val_frmt']['value']
@@ -295,26 +295,30 @@ def grd_tiff_convert(in_fp, out_dir, ann_fp = None, overwrite = 'user', debug = 
         else:
             dtype = np.float32
         log.debug(f'Data type = {dtype}')
-        # Read in binary data
-        z = np.fromfile(in_fp, dtype = dtype)
+        # Read in binary data with the file's byte order, then hold it in native order
+        z = np.fromfile(in_fp, dtype = np.dtype(dtype).newbyteorder(byte_order)).astype(dtype)
 
         # Reshape it to match what the text file says the image is
         if type == 'slope':
             z[z==-10000]= np.nan
+            # Copies, so the fill replacement below cannot leak through a view
             slopes = {}
-            slopes['east'] = z[::2].reshape(nrow, ncol)
-            slopes['north'] = z[1::2].reshape(nrow, ncol)
+            slopes['east'] = z[::2].reshape(nrow, ncol).copy()
+            slopes['north'] = z[1::2].reshape(nrow, ncol).copy()
         else:
             slopes = None
             z = z.reshape(nrow, ncol)
 
 
-        # Change zeros and -10,000 to nans based on documentation.
+        # Fill values to NaN. -10000 is the documented fill for ancillary
+        # products. Zero is fill outside the swath for image products, but a
+        # valid value for elevation and slope, so it is kept there.
         if com:
             z[z== 0 + 0*1j] = np.nan + np.nan * 1j
         else:
-            z[z==0]= np.nan
             z[z==-10000]= np.nan
+            if type not in ('hgt', 'slope'):
+                z[z==0]= np.nan
 
         if slopes:
             slope_fps = []
@@ -378,7 +382,7 @@ def array_to_tiff(arr, out_fp, desc, type):
     # Upper left corner coordinates
     lat1 = desc[f'{type}.row_addr']['value']
     lon1 = desc[f'{type}.col_addr']['value']
-    # Lat1/lon1 are already the center so for geotiff were good to go.
+    # Annotation lat/lon treated as the upper left corner of the upper left pixel
     t = Affine.translation(float(lon1), float(lat1))* Affine.scale(float(dlon), float(dlat))
     # Build the transform and CRS
     crs = CRS.from_user_input("EPSG:4326")
